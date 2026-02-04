@@ -1,0 +1,822 @@
+
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista NF-e</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f2f2f2;
+            color: #333;
+            font-size: 12px;
+            text-transform: uppercase;
+            min-width: 1200px;
+        }
+
+        .header {
+            background-color: #354a5f;
+            color: white;
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid #f0ab00;
+        }
+
+        .header-title {
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .container {
+            padding: 10px;
+            height: calc(100vh - 45px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 8px;
+            align-items: center;
+            background: #e0e0e0;
+            padding: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .btn {
+            background-color: #4a5c6e;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+            font-size: 11px;
+            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn:hover {
+            background-color: #3a4a5a;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex-grow: 1;
+            margin-left: 10px;
+        }
+
+        .search-wrapper input {
+            width: 100%;
+            padding: 6px 30px 6px 10px;
+            border: 1px solid #ccc;
+            font-size: 12px;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+
+        .search-wrapper input:focus {
+            border-color: #354a5f;
+            background-color: #eef3fb;
+        }
+
+        .clear-search {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            padding: 0 5px;
+        }
+
+        .clear-search:hover {
+            color: #333;
+        }
+
+        .exceptions-group {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            margin-left: 10px;
+        }
+
+        .exceptions-input {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            font-size: 12px;
+            width: 300px;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+
+        .exceptions-input:focus {
+            border-color: #354a5f;
+            background-color: #eef3fb;
+        }
+
+        .btn-icon {
+            background-color: #4a5c6e;
+            color: white;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-icon:hover {
+            background-color: #3a4a5a;
+        }
+
+        .table-container {
+            flex: 1;
+            overflow: auto;
+            background: white;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        th {
+            background-color: #354a5f;
+            color: white;
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-right: 1px solid #4a5f75;
+            font-size: 10px;
+        }
+
+        th:last-child {
+            border-right: none;
+        }
+
+        td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        tr {
+            background: white;
+            transition: background 0.2s;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        tr.checked {
+            background: #f0f0f0;
+            opacity: 0.7;
+        }
+
+        tr.checked:hover {
+            background: #e8e8e8;
+        }
+
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .copyable {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .copyable:hover {
+            background: #fff3cd;
+            text-decoration: underline;
+        }
+
+        .copied-feedback {
+            position: fixed;
+            background: #4a5c6e;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 3px;
+            font-size: 11px;
+            z-index: 3000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+            border-left: 3px solid #f0ab00;
+        }
+
+        .hidden-row {
+            display: none;
+        }
+
+        .highlight {
+            background-color: #fff9c4 !important;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(53, 74, 95, 0.95);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            width: 500px;
+            border-top: 5px solid #f0ab00;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            background: #354a5f;
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .close {
+            color: white;
+            font-size: 24px;
+            font-weight: 300;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-body {
+            padding: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .exception-item {
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border: 1px solid #e5e5e5;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .exception-item span {
+            flex: 1;
+            font-size: 11px;
+        }
+
+        .exception-item button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .exception-item button:hover {
+            background: #c82333;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6a6a6a;
+            font-size: 11px;
+        }
+
+        .status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 3px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            z-index: 2000;
+            font-size: 11px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">LISTA NF-E</div>
+    </div>
+
+    <div class="container">
+        <div class="toolbar">
+            <label for="fileInput">
+                <button class="btn" type="button" onclick="document.getElementById('fileInput').click()">
+                    📁 ADICIONAR
+                </button>
+            </label>
+            <input type="file" id="fileInput" accept=".txt">
+            
+            <button class="btn" onclick="exportarDados()">
+                💾 EXPORTAR
+            </button>
+            
+            <button class="btn" onclick="recuperarDados()">
+                🔄 RECUPERAR
+            </button>
+            
+            <button class="btn btn-danger" onclick="limparDados()">
+                🗑️ LIMPAR
+            </button>
+
+            <div class="search-wrapper">
+                <input type="text" id="searchInput" placeholder="Pesquisar...">
+                <button class="clear-search" onclick="limparPesquisa()">×</button>
+            </div>
+
+            <div class="exceptions-group">
+                <input type="text" class="exceptions-input" id="exceptionInput" placeholder="Digite o nome do emitente">
+                <button class="btn-icon" onclick="adicionarExcecao()">+</button>
+                <button class="btn-icon" onclick="abrirModalExcecoes()">🔍</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">✓</th>
+                        <th style="width: 150px;">CNPJ EMIT.</th>
+                        <th style="width: 110px;">DATA EMISSÃO</th>
+                        <th style="width: 120px;">NOTA FISCAL</th>
+                        <th style="width: 120px;">VALOR TOTAL</th>
+                        <th style="width: auto; min-width: 300px;">NOME EMIT.</th>
+                        <th style="width: 380px;">CHAVE ACESSO</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="modalExcecoes" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>LISTA DE EXCEÇÕES</h2>
+                <button class="close" onclick="fecharModalExcecoes()">×</button>
+            </div>
+            <div class="modal-body" id="modalExcecoesBody">
+            </div>
+        </div>
+    </div>
+
+    <div id="statusMessage" class="status"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC87U4DwYdrbHpok8r1ky893ruU-o6OXD8",
+            authDomain: "trabalho-e99e3.firebaseapp.com",
+            databaseURL: "https://trabalho-e99e3-default-rtdb.firebaseio.com",
+            projectId: "trabalho-e99e3",
+            storageBucket: "trabalho-e99e3.firebasestorage.app",
+            messagingSenderId: "272958172515",
+            appId: "1:272958172515:web:0b93d2681101251ed8b756",
+            measurementId: "G-27FYQZX7HH"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        let lancamentos = [];
+        let excecoes = [];
+        let termoPesquisa = '';
+
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            termoPesquisa = e.target.value.trim();
+            
+            if (termoPesquisa.length >= 3) {
+                aplicarPesquisa();
+            } else if (termoPesquisa.length === 0) {
+                limparPesquisa();
+            }
+        });
+
+        function aplicarPesquisa() {
+            const tbody = document.getElementById('tableBody');
+            const rows = tbody.getElementsByTagName('tr');
+            
+            for (let row of rows) {
+                const textoLinha = row.textContent.toLowerCase();
+                
+                if (textoLinha.includes(termoPesquisa.toLowerCase())) {
+                    row.classList.remove('hidden-row');
+                    row.classList.add('highlight');
+                } else {
+                    row.classList.add('hidden-row');
+                    row.classList.remove('highlight');
+                }
+            }
+        }
+
+        window.limparPesquisa = function() {
+            document.getElementById('searchInput').value = '';
+            termoPesquisa = '';
+            
+            const tbody = document.getElementById('tableBody');
+            const rows = tbody.getElementsByTagName('tr');
+            
+            for (let row of rows) {
+                row.classList.remove('hidden-row');
+                row.classList.remove('highlight');
+            }
+        };
+
+        window.adicionarExcecao = async function() {
+            const input = document.getElementById('exceptionInput');
+            const nomeExcecao = input.value.trim();
+            
+            if (!nomeExcecao) {
+                mostrarStatus('Digite um nome para adicionar', 'error');
+                return;
+            }
+
+            if (excecoes.includes(nomeExcecao)) {
+                mostrarStatus('Esta exceção já existe', 'error');
+                return;
+            }
+
+            excecoes.push(nomeExcecao);
+            await salvarExcecoes();
+            input.value = '';
+            aplicarFiltroExcecoes();
+            mostrarStatus('Exceção adicionada com sucesso', 'success');
+        };
+
+        window.removerExcecao = async function(nome) {
+            excecoes = excecoes.filter(e => e !== nome);
+            await salvarExcecoes();
+            aplicarFiltroExcecoes();
+            mostrarStatus('Exceção removida com sucesso', 'success');
+            renderizarModalExcecoes();
+        };
+
+        async function salvarExcecoes() {
+            try {
+                await set(ref(database, 'excecoes'), excecoes);
+            } catch (error) {
+                console.error('Erro ao salvar exceções:', error);
+                mostrarStatus('Erro ao salvar exceções', 'error');
+            }
+        }
+
+        async function carregarExcecoes() {
+            try {
+                const snapshot = await get(ref(database, 'excecoes'));
+                if (snapshot.exists()) {
+                    excecoes = snapshot.val() || [];
+                }
+            } catch (error) {
+                console.error('Erro ao carregar exceções:', error);
+            }
+        }
+
+        window.abrirModalExcecoes = function() {
+            renderizarModalExcecoes();
+            document.getElementById('modalExcecoes').style.display = 'block';
+        };
+
+        window.fecharModalExcecoes = function() {
+            document.getElementById('modalExcecoes').style.display = 'none';
+        };
+
+        function renderizarModalExcecoes() {
+            const modalBody = document.getElementById('modalExcecoesBody');
+            
+            if (excecoes.length === 0) {
+                modalBody.innerHTML = '<div class="empty-state">Nenhuma exceção cadastrada</div>';
+                return;
+            }
+
+            modalBody.innerHTML = '';
+            excecoes.forEach(excecao => {
+                const item = document.createElement('div');
+                item.className = 'exception-item';
+                item.innerHTML = `
+                    <span>${excecao}</span>
+                    <button onclick="removerExcecao('${excecao.replace(/'/g, "\\'")}')">×</button>
+                `;
+                modalBody.appendChild(item);
+            });
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('modalExcecoes');
+            if (event.target === modal) {
+                fecharModalExcecoes();
+            }
+        };
+
+        function aplicarFiltroExcecoes() {
+            lancamentos.forEach(lancamento => {
+                const nomeEmit = lancamento.nomeEmit.trim();
+                lancamento.filtrado = excecoes.some(excecao => 
+                    nomeEmit.toLowerCase().includes(excecao.toLowerCase())
+                );
+            });
+            renderizarTabela();
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                const conteudo = event.target.result;
+                await processarArquivo(conteudo);
+            };
+            reader.readAsText(file, 'UTF-8');
+            e.target.value = '';
+        });
+
+        async function processarArquivo(conteudo) {
+            try {
+                mostrarStatus('Processando arquivo...', 'info');
+                
+                const linhas = conteudo.split('\n');
+                let novosLancamentos = 0;
+                let duplicados = 0;
+
+                for (const linha of linhas) {
+                    if (linha.includes('|') && !linha.includes('CNPJ Emit.') && !linha.includes('---')) {
+                        const dados = linha.split('|').map(item => item.trim()).filter(item => item);
+                        
+                        if (dados.length >= 6) {
+                            const lancamento = {
+                                cnpj: dados[0],
+                                dataEmissao: dados[1],
+                                notaFiscal: dados[2],
+                                valorTotal: dados[3],
+                                nomeEmit: dados[4],
+                                chaveAcesso: dados[5],
+                                marcado: false,
+                                filtrado: false
+                            };
+
+                            const jaExiste = lancamentos.some(l => l.chaveAcesso === lancamento.chaveAcesso);
+                            
+                            if (!jaExiste) {
+                                lancamento.filtrado = excecoes.some(excecao => 
+                                    lancamento.nomeEmit.toLowerCase().includes(excecao.toLowerCase())
+                                );
+                                lancamentos.push(lancamento);
+                                novosLancamentos++;
+                            } else {
+                                duplicados++;
+                            }
+                        }
+                    }
+                }
+
+                await salvarLancamentos();
+                renderizarTabela();
+                
+                mostrarStatus(`${novosLancamentos} novo(s) lançamento(s) adicionado(s). ${duplicados} duplicado(s) ignorado(s).`, 'success');
+            } catch (error) {
+                console.error('Erro ao processar arquivo:', error);
+                mostrarStatus('Erro ao processar arquivo', 'error');
+            }
+        }
+
+        async function salvarLancamentos() {
+            try {
+                await set(ref(database, 'lancamentos'), lancamentos);
+            } catch (error) {
+                console.error('Erro ao salvar lançamentos:', error);
+                mostrarStatus('Erro ao salvar lançamentos', 'error');
+            }
+        }
+
+        async function carregarLancamentos() {
+            try {
+                const snapshot = await get(ref(database, 'lancamentos'));
+                if (snapshot.exists()) {
+                    lancamentos = snapshot.val() || [];
+                    renderizarTabela();
+                }
+            } catch (error) {
+                console.error('Erro ao carregar lançamentos:', error);
+            }
+        }
+
+        function renderizarTabela() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            const lancamentosFiltrados = lancamentos.filter(l => !l.filtrado);
+
+            if (lancamentosFiltrados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum lançamento encontrado</td></tr>';
+                return;
+            }
+
+            lancamentosFiltrados.forEach((lancamento, index) => {
+                const tr = document.createElement('tr');
+                if (lancamento.marcado) {
+                    tr.className = 'checked';
+                }
+                
+                tr.innerHTML = `
+                    <td><input type="checkbox" ${lancamento.marcado ? 'checked' : ''} onchange="toggleMarcado(${lancamentos.indexOf(lancamento)})"></td>
+                    <td>${lancamento.cnpj}</td>
+                    <td>${lancamento.dataEmissao}</td>
+                    <td class="copyable" onclick="copiarParaAreaTransferencia('${lancamento.notaFiscal}', event)">${lancamento.notaFiscal}</td>
+                    <td>${lancamento.valorTotal}</td>
+                    <td>${lancamento.nomeEmit}</td>
+                    <td class="copyable" onclick="copiarParaAreaTransferencia('${lancamento.chaveAcesso}', event)">${lancamento.chaveAcesso}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.copiarParaAreaTransferencia = async function(texto, event) {
+            try {
+                await navigator.clipboard.writeText(texto);
+                
+                const feedback = document.createElement('div');
+                feedback.className = 'copied-feedback';
+                feedback.textContent = 'COPIADO!';
+                feedback.style.left = event.pageX + 'px';
+                feedback.style.top = (event.pageY - 40) + 'px';
+                document.body.appendChild(feedback);
+                
+                setTimeout(() => {
+                    feedback.remove();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Erro ao copiar:', error);
+                mostrarStatus('Erro ao copiar para área de transferência', 'error');
+            }
+        };
+
+        window.toggleMarcado = async function(index) {
+            lancamentos[index].marcado = !lancamentos[index].marcado;
+            await salvarLancamentos();
+            renderizarTabela();
+        };
+
+        window.recuperarDados = async function() {
+            mostrarStatus('Recuperando dados...', 'info');
+            await carregarExcecoes();
+            await carregarLancamentos();
+            mostrarStatus('Dados recuperados com sucesso', 'success');
+        };
+
+        window.limparDados = async function() {
+            if (confirm('Tem certeza que deseja limpar todos os lançamentos? As exceções serão mantidas.')) {
+                lancamentos = [];
+                await remove(ref(database, 'lancamentos'));
+                renderizarTabela();
+                mostrarStatus('Lançamentos removidos com sucesso', 'success');
+            }
+        };
+
+        window.exportarDados = function() {
+            const lancamentosFiltrados = lancamentos.filter(l => !l.filtrado);
+            
+            if (lancamentosFiltrados.length === 0) {
+                mostrarStatus('Não há dados para exportar', 'error');
+                return;
+            }
+
+            let conteudo = '----------------------------------------------------------------------------------------------------------------------------------------------------------------------\n';
+            conteudo += 'LISTA NF-E - EXPORTAÇÃO\n';
+            conteudo += '----------------------------------------------------------------------------------------------------------------------------------------------------------------------\n';
+            conteudo += '|      CNPJ EMIT.    |DATA DE EMISSÃO|NOTA FISCAL|VALOR TOTAL|NOME EMIT.                                                |CHAVE ACESSO                                |MARCADO|\n';
+            conteudo += '----------------------------------------------------------------------------------------------------------------------------------------------------------------------\n';
+            
+            lancamentosFiltrados.forEach(l => {
+                const cnpj = l.cnpj.padEnd(20);
+                const data = l.dataEmissao.padEnd(15);
+                const nota = l.notaFiscal.padEnd(11);
+                const valor = l.valorTotal.padEnd(11);
+                const nome = l.nomeEmit.padEnd(58);
+                const chave = l.chaveAcesso.padEnd(44);
+                const marcado = (l.marcado ? 'SIM' : 'NÃO').padEnd(7);
+                
+                conteudo += `|${cnpj}|${data}|${nota}|${valor}|${nome}|${chave}|${marcado}|\n`;
+            });
+            
+            conteudo += '----------------------------------------------------------------------------------------------------------------------------------------------------------------------\n';
+
+            const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `lista_nfe_${new Date().toISOString().split('T')[0]}.txt`;
+            link.click();
+            
+            mostrarStatus('Dados exportados com sucesso', 'success');
+        };
+
+        function mostrarStatus(mensagem, tipo) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.className = `status ${tipo}`;
+            statusDiv.textContent = mensagem;
+            statusDiv.style.display = 'block';
+
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 4000);
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await carregarExcecoes();
+            await carregarLancamentos();
+        });
+    </script>
+</body>
+</html>
