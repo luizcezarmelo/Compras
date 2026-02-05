@@ -630,9 +630,21 @@
         }
 
         function converterDataParaOrdenacao(dataStr) {
-            const partes = dataStr.split('/');
+            // Suporta formatos: DD.MM.AAAA ou DD.MM.AAAA HH:MM:SS
+            const partes = dataStr.split(' ')[0].split('.');
             if (partes.length === 3) {
-                return new Date(partes[2], partes[1] - 1, partes[0]);
+                const dia = parseInt(partes[0]);
+                const mes = parseInt(partes[1]) - 1;
+                const ano = parseInt(partes[2]);
+                
+                // Se tiver horário, incluir na data
+                const tempoPartes = dataStr.split(' ');
+                if (tempoPartes.length > 1) {
+                    const [hora, minuto, segundo] = tempoPartes[1].split(':').map(n => parseInt(n) || 0);
+                    return new Date(ano, mes, dia, hora, minuto, segundo);
+                }
+                
+                return new Date(ano, mes, dia);
             }
             return new Date(0);
         }
@@ -789,20 +801,22 @@
         window.toggleMarcado = async function(indexOriginal, indexFiltrado, event) {
             const shiftPressed = event.shiftKey;
             
+            // Primeiro, inverte o estado do checkbox clicado
+            lancamentos[indexOriginal].marcado = !lancamentos[indexOriginal].marcado;
+            const novoEstado = lancamentos[indexOriginal].marcado;
+            
             if (shiftPressed && lastCheckedIndex !== -1 && lastCheckedIndex !== indexFiltrado) {
                 const start = Math.min(lastCheckedIndex, indexFiltrado);
                 const end = Math.max(lastCheckedIndex, indexFiltrado);
-                const novoEstado = lancamentos[indexOriginal].marcado;
                 
                 const lancamentosFiltrados = lancamentos.filter(l => !l.filtrado);
                 
+                // Aplica o mesmo estado para todo o intervalo
                 for (let i = start; i <= end; i++) {
                     const lancamentoAtual = lancamentosFiltrados[i];
                     const indexNaListaOriginal = lancamentos.indexOf(lancamentoAtual);
                     lancamentos[indexNaListaOriginal].marcado = novoEstado;
                 }
-            } else {
-                lancamentos[indexOriginal].marcado = !lancamentos[indexOriginal].marcado;
             }
             
             lastCheckedIndex = indexFiltrado;
