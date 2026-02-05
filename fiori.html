@@ -734,6 +734,12 @@
                 const snapshot = await get(ref(database, 'lancamentos'));
                 if (snapshot.exists()) {
                     lancamentos = snapshot.val() || [];
+                    // Garantir que todos os lançamentos tenham a propriedade marcado definida
+                    lancamentos = lancamentos.map(l => ({
+                        ...l,
+                        marcado: l.marcado === true,
+                        filtrado: l.filtrado === true
+                    }));
                     ordenarLancamentosPorData();
                     renderizarTabela();
                 }
@@ -764,15 +770,50 @@
                     tr.className = 'checked';
                 }
                 
-                tr.innerHTML = `
-                    <td><input type="checkbox" ${lancamento.marcado ? 'checked' : ''} onchange="toggleMarcado(${indexOriginal}, ${indexFiltrado}, event)"></td>
-                    <td>${lancamento.cnpj}</td>
-                    <td>${lancamento.dataEmissao}</td>
-                    <td class="copyable" onclick="copiarParaAreaTransferencia('${lancamento.notaFiscal}', event)">${lancamento.notaFiscal}</td>
-                    <td>${lancamento.valorTotal}</td>
-                    <td>${lancamento.nomeEmit}</td>
-                    <td class="copyable" onclick="copiarParaAreaTransferencia('${lancamento.chaveAcesso}', event)">${lancamento.chaveAcesso}</td>
-                `;
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = lancamento.marcado;
+                checkbox.addEventListener('click', function(event) {
+                    toggleMarcado(indexOriginal, indexFiltrado, event);
+                });
+                
+                const tdCheckbox = document.createElement('td');
+                tdCheckbox.appendChild(checkbox);
+                
+                const tdCnpj = document.createElement('td');
+                tdCnpj.textContent = lancamento.cnpj;
+                
+                const tdData = document.createElement('td');
+                tdData.textContent = lancamento.dataEmissao;
+                
+                const tdNota = document.createElement('td');
+                tdNota.className = 'copyable';
+                tdNota.textContent = lancamento.notaFiscal;
+                tdNota.addEventListener('click', function(event) {
+                    copiarParaAreaTransferencia(lancamento.notaFiscal, event);
+                });
+                
+                const tdValor = document.createElement('td');
+                tdValor.textContent = lancamento.valorTotal;
+                
+                const tdNome = document.createElement('td');
+                tdNome.textContent = lancamento.nomeEmit;
+                
+                const tdChave = document.createElement('td');
+                tdChave.className = 'copyable';
+                tdChave.textContent = lancamento.chaveAcesso;
+                tdChave.addEventListener('click', function(event) {
+                    copiarParaAreaTransferencia(lancamento.chaveAcesso, event);
+                });
+                
+                tr.appendChild(tdCheckbox);
+                tr.appendChild(tdCnpj);
+                tr.appendChild(tdData);
+                tr.appendChild(tdNota);
+                tr.appendChild(tdValor);
+                tr.appendChild(tdNome);
+                tr.appendChild(tdChave);
+                
                 tbody.appendChild(tr);
             });
         }
