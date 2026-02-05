@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -403,8 +402,8 @@
                 🔄 RECUPERAR
             </button>
             
-            <button class="btn btn-danger" onclick="limparDados()">
-                🗑️ LIMPAR
+            <button class="btn btn-danger" onclick="excluirMarcados()">
+                🗑️ EXCLUIR
             </button>
 
             <div class="search-wrapper">
@@ -423,7 +422,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 50px;">✓</th>
+                        <th style="width: 50px;"><input type="checkbox" id="checkboxAll" onchange="toggleTodos()"></th>
                         <th style="width: 150px;">CNPJ EMIT.</th>
                         <th style="width: 110px;">DATA EMISSÃO</th>
                         <th style="width: 120px;">NOTA FISCAL</th>
@@ -472,6 +471,7 @@
         let lancamentos = [];
         let excecoes = [];
         let termoPesquisa = '';
+        let lastCheckedIndex = -1;
 
         document.getElementById('searchInput').addEventListener('input', function(e) {
             termoPesquisa = e.target.value.trim();
@@ -480,6 +480,13 @@
                 aplicarPesquisa();
             } else if (termoPesquisa.length === 0) {
                 limparPesquisa();
+            }
+        });
+
+        document.getElementById('exceptionInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                adicionarExcecao();
             }
         });
 
@@ -511,6 +518,20 @@
                 row.classList.remove('hidden-row');
                 row.classList.remove('highlight');
             }
+        };
+
+        window.toggleTodos = function() {
+            const checkboxAll = document.getElementById('checkboxAll');
+            const marcado = checkboxAll.checked;
+            
+            lancamentos.forEach(lancamento => {
+                if (!lancamento.filtrado) {
+                    lancamento.marcado = marcado;
+                }
+            });
+            
+            salvarLancamentos();
+            renderizarTabela();
         };
 
         window.adicionarExcecao = async function() {
@@ -608,6 +629,22 @@
             renderizarTabela();
         }
 
+        function converterDataParaOrdenacao(dataStr) {
+            const partes = dataStr.split('/');
+            if (partes.length === 3) {
+                return new Date(partes[2], partes[1] - 1, partes[0]);
+            }
+            return new Date(0);
+        }
+
+        function ordenarLancamentosPorData() {
+            lancamentos.sort((a, b) => {
+                const dataA = converterDataParaOrdenacao(a.dataEmissao);
+                const dataB = converterDataParaOrdenacao(b.dataEmissao);
+                return dataB - dataA;
+            });
+        }
+
         document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -660,6 +697,7 @@
                     }
                 }
 
+                ordenarLancamentosPorData();
                 await salvarLancamentos();
                 renderizarTabela();
                 
@@ -684,6 +722,7 @@
                 const snapshot = await get(ref(database, 'lancamentos'));
                 if (snapshot.exists()) {
                     lancamentos = snapshot.val() || [];
+                    ordenarLancamentosPorData();
                     renderizarTabela();
                 }
             } catch (error) {
@@ -699,17 +738,22 @@
 
             if (lancamentosFiltrados.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum lançamento encontrado</td></tr>';
+                document.getElementById('checkboxAll').checked = false;
                 return;
             }
 
-            lancamentosFiltrados.forEach((lancamento, index) => {
+            const todosMarcados = lancamentosFiltrados.every(l => l.marcado);
+            document.getElementById('checkboxAll').checked = todosMarcados;
+
+            lancamentosFiltrados.forEach((lancamento, indexFiltrado) => {
+                const indexOriginal = lancamentos.indexOf(lancamento);
                 const tr = document.createElement('tr');
                 if (lancamento.marcado) {
                     tr.className = 'checked';
                 }
                 
                 tr.innerHTML = `
-                    <td><input type="checkbox" ${lancamento.marcado ? 'checked' : ''} onchange="toggleMarcado(${lancamentos.indexOf(lancamento)})"></td>
+                    <td><input type="checkbox" ${lancamento.marcado ? 'checked' : ''} onchange="toggleMarcado(${indexOriginal}, ${indexFiltrado}, event)"></td>
                     <td>${lancamento.cnpj}</td>
                     <td>${lancamento.dataEmissao}</td>
                     <td class="copyable" onclick="copiarParaAreaTransferencia('${lancamento.notaFiscal}', event)">${lancamento.notaFiscal}</td>
@@ -742,10 +786,45 @@
             }
         };
 
-        window.toggleMarcado = async function(index) {
-            lancamentos[index].marcado = !lancamentos[index].marcado;
+        window.toggleMarcado = async function(indexOriginal, indexFiltrado, event) {
+            const shiftPressed = event.shiftKey;
+            
+            if (shiftPressed && lastCheckedIndex !== -1 && lastCheckedIndex !== indexFiltrado) {
+                const start = Math.min(lastCheckedIndex, indexFiltrado);
+                const end = Math.max(lastCheckedIndex, indexFiltrado);
+                const novoEstado = lancamentos[indexOriginal].marcado;
+                
+                const lancamentosFiltrados = lancamentos.filter(l => !l.filtrado);
+                
+                for (let i = start; i <= end; i++) {
+                    const lancamentoAtual = lancamentosFiltrados[i];
+                    const indexNaListaOriginal = lancamentos.indexOf(lancamentoAtual);
+                    lancamentos[indexNaListaOriginal].marcado = novoEstado;
+                }
+            } else {
+                lancamentos[indexOriginal].marcado = !lancamentos[indexOriginal].marcado;
+            }
+            
+            lastCheckedIndex = indexFiltrado;
+            
             await salvarLancamentos();
             renderizarTabela();
+        };
+
+        window.excluirMarcados = async function() {
+            const marcados = lancamentos.filter(l => l.marcado);
+            
+            if (marcados.length === 0) {
+                mostrarStatus('Nenhum lançamento marcado para excluir', 'error');
+                return;
+            }
+
+            if (confirm(`Tem certeza que deseja excluir ${marcados.length} lançamento(s) marcado(s)?`)) {
+                lancamentos = lancamentos.filter(l => !l.marcado);
+                await salvarLancamentos();
+                renderizarTabela();
+                mostrarStatus(`${marcados.length} lançamento(s) excluído(s) com sucesso`, 'success');
+            }
         };
 
         window.recuperarDados = async function() {
@@ -753,15 +832,6 @@
             await carregarExcecoes();
             await carregarLancamentos();
             mostrarStatus('Dados recuperados com sucesso', 'success');
-        };
-
-        window.limparDados = async function() {
-            if (confirm('Tem certeza que deseja limpar todos os lançamentos? As exceções serão mantidas.')) {
-                lancamentos = [];
-                await remove(ref(database, 'lancamentos'));
-                renderizarTabela();
-                mostrarStatus('Lançamentos removidos com sucesso', 'success');
-            }
         };
 
         window.exportarDados = function() {
