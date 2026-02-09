@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -552,6 +553,7 @@
             await salvarExcecoes();
             input.value = '';
             aplicarFiltroExcecoes();
+            await salvarLancamentos();
             mostrarStatus('Exceção adicionada com sucesso', 'success');
         };
 
@@ -559,6 +561,7 @@
             excecoes = excecoes.filter(e => e !== nome);
             await salvarExcecoes();
             aplicarFiltroExcecoes();
+            await salvarLancamentos();
             mostrarStatus('Exceção removida com sucesso', 'success');
             renderizarModalExcecoes();
         };
@@ -630,14 +633,12 @@
         }
 
         function converterDataParaOrdenacao(dataStr) {
-            // Suporta formatos: DD.MM.AAAA ou DD.MM.AAAA HH:MM:SS
             const partes = dataStr.split(' ')[0].split('.');
             if (partes.length === 3) {
                 const dia = parseInt(partes[0]);
                 const mes = parseInt(partes[1]) - 1;
                 const ano = parseInt(partes[2]);
                 
-                // Se tiver horário, incluir na data
                 const tempoPartes = dataStr.split(' ');
                 if (tempoPartes.length > 1) {
                     const [hora, minuto, segundo] = tempoPartes[1].split(':').map(n => parseInt(n) || 0);
@@ -734,14 +735,13 @@
                 const snapshot = await get(ref(database, 'lancamentos'));
                 if (snapshot.exists()) {
                     lancamentos = snapshot.val() || [];
-                    // Garantir que todos os lançamentos tenham a propriedade marcado definida
                     lancamentos = lancamentos.map(l => ({
                         ...l,
                         marcado: l.marcado === true,
                         filtrado: l.filtrado === true
                     }));
                     ordenarLancamentosPorData();
-                    renderizarTabela();
+                    aplicarFiltroExcecoes();
                 }
             } catch (error) {
                 console.error('Erro ao carregar lançamentos:', error);
@@ -842,7 +842,6 @@
         window.toggleMarcado = async function(indexOriginal, indexFiltrado, event) {
             const shiftPressed = event.shiftKey;
             
-            // Primeiro, inverte o estado do checkbox clicado
             lancamentos[indexOriginal].marcado = !lancamentos[indexOriginal].marcado;
             const novoEstado = lancamentos[indexOriginal].marcado;
             
@@ -852,7 +851,6 @@
                 
                 const lancamentosFiltrados = lancamentos.filter(l => !l.filtrado);
                 
-                // Aplica o mesmo estado para todo o intervalo
                 for (let i = start; i <= end; i++) {
                     const lancamentoAtual = lancamentosFiltrados[i];
                     const indexNaListaOriginal = lancamentos.indexOf(lancamentoAtual);
