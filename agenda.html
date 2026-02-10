@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestão de Contatos</title>
+    <title>Agenda Fornecedores</title>
     <style>
         * {
             margin: 0;
@@ -304,26 +304,13 @@
             gap: 12px;
         }
 
-        .contact-avatar-small {
-            width: 36px;
-            height: 36px;
-            background: var(--primary-blue);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-
-        .contact-name-text {
+        /* NEGRITO NA EMPRESA */
+        .company-name-text {
             font-weight: 500;
             color: var(--gray-900);
         }
 
-
+        .favorite-icon {
             cursor: pointer;
             font-size: 18px;
             transition: all 0.2s;
@@ -603,7 +590,6 @@
         }
 
         @media (max-width: 768px) {
-
             .toolbar {
                 flex-direction: column;
                 align-items: stretch;
@@ -798,8 +784,15 @@
                 const data = snapshot.val();
                 if (data) {
                     contacts = Object.keys(data).map(key => ({
-                        id: key, // Manter como string
-                        ...data[key]
+                        id: key,
+                        name: data[key].name || '',
+                        company: data[key].company || '',
+                        phone: data[key].phone || '',
+                        email: data[key].email || '',
+                        notes: data[key].notes || '',
+                        favorite: data[key].favorite || false,
+                        createdAt: data[key].createdAt || '',
+                        updatedAt: data[key].updatedAt || ''
                     }));
                 } else {
                     contacts = [];
@@ -810,8 +803,19 @@
 
         // Salvar contato no Firebase
         function saveToFirebase(contact) {
+            const contactToSave = {
+                name: contact.name || '',
+                company: contact.company || '',
+                phone: contact.phone || '',
+                email: contact.email || '',
+                notes: contact.notes || '',
+                favorite: contact.favorite || false,
+                createdAt: contact.createdAt || new Date().toISOString(),
+                updatedAt: contact.updatedAt || new Date().toISOString()
+            };
+            
             const contactRef = ref(database, 'contacts/' + contact.id);
-            set(contactRef, contact);
+            set(contactRef, contactToSave);
         }
 
         // Deletar contato do Firebase
@@ -890,38 +894,63 @@
             document.getElementById('contactForm').addEventListener('submit', saveContact);
         }
 
-        // Filtrar contatos
+        // FUNÇÃO DE PESQUISA COMPLETAMENTE REFEITA
+        function searchContacts(searchTerm) {
+            if (!searchTerm || searchTerm.length < 3) {
+                return contacts;
+            }
+            
+            const lowerSearchTerm = searchTerm.toLowerCase();
+            
+            return contacts.filter(contact => {
+                // Verificar empresa
+                if (contact.company && contact.company.toLowerCase().includes(lowerSearchTerm)) {
+                    return true;
+                }
+                
+                // Verificar nome
+                if (contact.name && contact.name.toLowerCase().includes(lowerSearchTerm)) {
+                    return true;
+                }
+                
+                // Verificar email
+                if (contact.email && contact.email.toLowerCase().includes(lowerSearchTerm)) {
+                    return true;
+                }
+                
+                // Verificar telefone (remover formatação)
+                if (contact.phone) {
+                    const phoneClean = contact.phone.replace(/\D/g, '');
+                    const searchClean = lowerSearchTerm.replace(/\D/g, '');
+                    if (searchClean && phoneClean.includes(searchClean)) {
+                        return true;
+                    }
+                }
+                
+                // Verificar observações
+                if (contact.notes && contact.notes.toLowerCase().includes(lowerSearchTerm)) {
+                    return true;
+                }
+                
+                return false;
+            });
+        }
+
+        // Filtrar contatos - FUNÇÃO SIMPLIFICADA
         function getFilteredContacts() {
             const searchInput = document.getElementById('searchInput');
-            const searchTerm = searchInput.value.toLowerCase().trim();
+            const searchTerm = searchInput.value.trim();
             
-            // Se menos de 3 caracteres e não vazio, retorna array vazio
+            // Se menos de 3 caracteres, retorna vazio ou todos dependendo do comprimento
             if (searchTerm.length > 0 && searchTerm.length < 3) {
-                return [];
+                return []; // Retorna array vazio para mostrar "Digite pelo menos 3 caracteres"
             }
             
             let filtered = contacts;
             
-            // Aplicar filtro de busca
+            // Aplicar busca se tiver 3+ caracteres
             if (searchTerm.length >= 3) {
-                filtered = filtered.filter(contact => {
-                    // Busca em empresa
-                    const matchCompany = contact.company && contact.company.toLowerCase().includes(searchTerm);
-                    
-                    // Busca em contato/nome
-                    const matchName = contact.name && contact.name.toLowerCase().includes(searchTerm);
-                    
-                    // Busca em telefone (remove formatação)
-                    const matchPhone = contact.phone && contact.phone.replace(/\D/g, '').includes(searchTerm.replace(/\D/g, ''));
-                    
-                    // Busca em email
-                    const matchEmail = contact.email && contact.email.toLowerCase().includes(searchTerm);
-                    
-                    // Busca em observações
-                    const matchNotes = contact.notes && contact.notes.toLowerCase().includes(searchTerm);
-                    
-                    return matchCompany || matchName || matchPhone || matchEmail || matchNotes;
-                });
+                filtered = searchContacts(searchTerm);
             }
             
             // Aplicar filtro de favoritos
@@ -1006,7 +1035,6 @@
                     const phone = escapeHtml(contact.phone || '-');
                     const email = escapeHtml(contact.email || '-');
                     const notes = escapeHtml(contact.notes || '-');
-                    const initial = contact.name ? contact.name.charAt(0).toUpperCase() : '?';
                     const favoriteClass = contact.favorite ? 'active' : '';
                     
                     const row = document.createElement('tr');
@@ -1015,11 +1043,12 @@
                             <span class="favorite-icon ${favoriteClass}" 
                                   data-id="${contactId}">★</span>
                         </td>
-                        <td class="copyable" title="Clique para copiar">${company}</td>
+                        <td class="copyable" title="Clique para copiar">
+                            <span class="company-name-text">${company}</span>
+                        </td>
                         <td class="copyable" title="Clique para copiar">
                             <div class="contact-name">
-                                <div class="contact-avatar-small">${initial}</div>
-                                <span class="contact-name-text">${name}</span>
+                                <span>${name}</span>
                             </div>
                         </td>
                         <td class="copyable" title="Clique para copiar">${phone}</td>
@@ -1052,9 +1081,21 @@
                     // Adicionar função de copiar em células copyable
                     row.querySelectorAll('.copyable').forEach(cell => {
                         cell.addEventListener('click', function() {
-                            const text = this.textContent.trim();
-                            if (text && text !== '-') {
-                                copyToClipboard(text);
+                            let textToCopy = '';
+                            
+                            // Para a célula da empresa, pegar o texto com classe company-name-text
+                            if (cell.querySelector('.company-name-text')) {
+                                const companySpan = cell.querySelector('.company-name-text');
+                                textToCopy = companySpan ? companySpan.textContent.trim() : '';
+                            } 
+                            // Para outras células
+                            else {
+                                textToCopy = cell.textContent.trim();
+                            }
+                            
+                            // Remover qualquer "-" vazio
+                            if (textToCopy && textToCopy !== '-') {
+                                copyToClipboard(textToCopy);
                             }
                         });
                     });
@@ -1144,8 +1185,8 @@
             if (contact) {
                 title.textContent = 'Editar Contato';
                 document.getElementById('company').value = contact.company || '';
-                document.getElementById('name').value = contact.name;
-                document.getElementById('phone').value = contact.phone;
+                document.getElementById('name').value = contact.name || '';
+                document.getElementById('phone').value = contact.phone || '';
                 document.getElementById('email').value = contact.email || '';
                 document.getElementById('notes').value = contact.notes || '';
                 editingId = contact.id;
@@ -1171,11 +1212,11 @@
             e.preventDefault();
 
             const contact = {
-                name: document.getElementById('name').value,
-                company: document.getElementById('company').value,
-                phone: document.getElementById('phone').value,
-                email: document.getElementById('email').value,
-                notes: document.getElementById('notes').value,
+                name: document.getElementById('name').value.trim(),
+                company: document.getElementById('company').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                notes: document.getElementById('notes').value.trim(),
                 favorite: false
             };
 
@@ -1230,22 +1271,14 @@
 
         // Editar contato
         function editContact(id) {
-            console.log('Editando contato ID:', id);
             const contact = contacts.find(c => c.id === id);
-            
             if (contact) {
-                console.log('Contato encontrado:', contact);
                 openModal(contact);
-            } else {
-                console.error('Contato não encontrado. ID procurado:', id);
-                console.error('IDs disponíveis:', contacts.map(c => c.id));
-                alert('Erro: Contato não encontrado. Tente recarregar a página.');
             }
         }
 
         // Excluir contato
         function deleteContact(id) {
-            console.log('Excluindo contato ID:', id);
             if (confirm('Tem certeza que deseja excluir este contato?')) {
                 deleteFromFirebase(id);
             }
@@ -1253,15 +1286,11 @@
 
         // Toggle favorito
         function toggleFavorite(id) {
-            console.log('Toggle favorito ID:', id);
             const contact = contacts.find(c => c.id === id);
             if (contact) {
                 contact.favorite = !contact.favorite;
                 contact.updatedAt = new Date().toISOString();
                 saveToFirebase(contact);
-            } else {
-                console.error('Contato não encontrado para favoritar:', id);
-                console.error('IDs disponíveis:', contacts.map(c => c.id));
             }
         }
 
