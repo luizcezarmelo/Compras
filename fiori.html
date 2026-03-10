@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -668,9 +669,9 @@
 
         function ordenarLancamentosPorData() {
             lancamentos.sort((a, b) => {
-                const dataA = converterDataParaOrdenacao(a.dataEmissao);
-                const dataB = converterDataParaOrdenacao(b.dataEmissao);
-                return dataB - dataA;
+                const importacaoA = a.dataImportacao || 0;
+                const importacaoB = b.dataImportacao || 0;
+                return importacaoB - importacaoA;
             });
         }
 
@@ -694,6 +695,7 @@
                 const linhas = conteudo.split('\n');
                 let novosLancamentos = 0;
                 let duplicados = 0;
+                const dataImportacao = Date.now();
 
                 console.log('=== PROCESSANDO ARQUIVO ===');
                 console.log('Total de linhas no arquivo:', linhas.length);
@@ -713,7 +715,8 @@
                                 nomeEmit: dados[4],
                                 chaveAcesso: dados[5],
                                 marcado: false,
-                                filtrado: false
+                                filtrado: false,
+                                dataImportacao: dataImportacao
                             };
 
                             const jaExiste = lancamentos.some(l => l.chaveAcesso === lancamento.chaveAcesso);
@@ -835,12 +838,12 @@
                     copiarParaAreaTransferencia(lancamento.notaFiscal, event);
                 });
                 
-             const tdValor = document.createElement('td');
-tdValor.className = 'copyable';
-tdValor.textContent = lancamento.valorTotal;
-tdValor.addEventListener('click', function(event) {
-    copiarParaAreaTransferencia(lancamento.valorTotal, event);
-});
+                const tdValor = document.createElement('td');
+                tdValor.className = 'copyable';
+                tdValor.textContent = lancamento.valorTotal;
+                tdValor.addEventListener('click', function(event) {
+                    copiarParaAreaTransferencia(lancamento.valorTotal, event);
+                });
                 
                 const tdNome = document.createElement('td');
                 tdNome.textContent = lancamento.nomeEmit;
@@ -888,7 +891,6 @@ tdValor.addEventListener('click', function(event) {
         window.toggleMarcado = async function(indexOriginal, indexFiltrado, event) {
             const shiftPressed = event.shiftKey;
             
-            // Alternar o estado do item clicado
             lancamentos[indexOriginal].marcado = !lancamentos[indexOriginal].marcado;
             const novoEstado = lancamentos[indexOriginal].marcado;
             
@@ -913,7 +915,7 @@ tdValor.addEventListener('click', function(event) {
         };
 
         window.excluirMarcados = async function() {
-            const marcados = lancamentos.filter(l => l.marcado);
+            const marcados = lancamentos.filter(l => l.marcado && !l.filtrado);
             
             if (marcados.length === 0) {
                 mostrarStatus('Nenhum lançamento marcado para excluir', 'error');
@@ -921,7 +923,7 @@ tdValor.addEventListener('click', function(event) {
             }
 
             if (confirm(`Tem certeza que deseja excluir ${marcados.length} lançamento(s) marcado(s)?`)) {
-                lancamentos = lancamentos.filter(l => !l.marcado);
+                lancamentos = lancamentos.filter(l => !(l.marcado && !l.filtrado));
                 await salvarLancamentos();
                 renderizarTabela();
                 mostrarStatus(`${marcados.length} lançamento(s) excluído(s) com sucesso`, 'success');
