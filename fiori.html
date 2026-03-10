@@ -835,8 +835,12 @@
                     copiarParaAreaTransferencia(lancamento.notaFiscal, event);
                 });
                 
-                const tdValor = document.createElement('td');
-                tdValor.textContent = lancamento.valorTotal;
+             const tdValor = document.createElement('td');
+tdValor.className = 'copyable';
+tdValor.textContent = lancamento.valorTotal;
+tdValor.addEventListener('click', function(event) {
+    copiarParaAreaTransferencia(lancamento.valorTotal, event);
+});
                 
                 const tdNome = document.createElement('td');
                 tdNome.textContent = lancamento.nomeEmit;
