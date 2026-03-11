@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -35,23 +36,6 @@
             font-size: 16px;
             font-weight: bold;
             letter-spacing: 0.5px;
-        }
-
-        .header-btn {
-            font-size: 11px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2px 8px;
-            border-radius: 3px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            text-decoration: none;
-            display: inline-block;
-            transition: 0.2s;
-            cursor: pointer;
-        }
-
-        .header-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
         }
 
         .mode-badge {
@@ -730,9 +714,7 @@
     <div id="main-content" style="display: none;">
         <div class="header">
             <div class="header-title">ACOMPANHAMENTO DE PEDIDOS</div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <a href="https://luizcezarmelo.github.io/Compras/agenda.html" target="_blank" class="header-btn">📅 AGENDA</a>
-                <a href="https://luizcezarmelo.github.io/Compras/fiori.html" target="_blank" class="header-btn">📋 NF-E</a>
+            <div style="display: flex; align-items: center;">
                 <div class="mode-badge" id="mode-badge"></div>
                 <span id="save-indicator" class="save-indicator" style="display:none;"></span>
                 <span id="file-info" class="file-info"></span>
@@ -805,6 +787,7 @@
                     <button class="btn" onclick="doBackup()">💾 BACKUP</button>
                     <button class="btn" onclick="doRestore()">📂 RECUPERAR</button>
                     <button class="btn" onclick="openTrash()">🗑️ EXCLUÍDOS</button>
+                    <button class="btn" onclick="openListaNFe()">📋 LISTA NF-E</button>
                 </div>
             </div>
 
@@ -1265,10 +1248,24 @@
             let newValue = val.trim();
 
             if (key === 'vlrNf') {
-                const tempInput = document.createElement('input');
-                tempInput.value = newValue;
-                maskMoney(tempInput);
-                newValue = tempInput.value;
+                // Remove tudo exceto dígitos
+                let v = newValue.replace(/[^\d]/g, '');
+                
+                if (v.length === 0) {
+                    newValue = '';
+                } else {
+                    // Converte para número (centavos)
+                    let valorEmCentavos = parseInt(v, 10);
+                    
+                    // Divide por 100 para obter o valor em reais
+                    let valorEmReais = valorEmCentavos / 100;
+                    
+                    // Formata para moeda brasileira
+                    newValue = 'R$ ' + valorEmReais.toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                }
             } else if (key === 'pedido') {
                 newValue = maskPedidoValue(newValue);
                 
@@ -1287,6 +1284,10 @@
 
             if (item) {
                 item[key] = newValue;
+                const cellEl = document.getElementById('cell-' + id + '-' + key);
+                if (cellEl && cellEl.innerText !== newValue) {
+                    cellEl.innerText = newValue;
+                }
                 debouncedSave();
             }
         }
@@ -1497,14 +1498,11 @@
                 const chaveOnClick = isEdit ? `onclick="copyAndEdit(${item.id}, 'chave', this)"` : `onclick="copyToClipboard('${item.chave || ''}')"`;
                 const valorOnClick = isEdit ? `onclick="copyAndEdit(${item.id}, 'vlrNf', this)"` : `onclick="copyToClipboard('${item.vlrNf || ''}')"`;
 
-                const pedidoOnInput = isEdit ? `oninput="maskPedidoCell(this, ${item.id})"` : '';
+                const pedidoOnInput = '';
                 const pedidoOnBlur = isEdit ? `onblur="updateCell(${item.id}, 'pedido', this.innerText)"` : '';
                 const nfOnBlur = isEdit ? `onblur="updateCell(${item.id}, 'nf', this.innerText)"` : '';
                 const chaveOnBlur = isEdit ? `onblur="updateCell(${item.id}, 'chave', this.innerText)"` : '';
-                const valorOnInput = isEdit ? `oninput="maskMoneyCell(this, ${item.id})"` : '';
                 const valorOnBlur = isEdit ? `onblur="updateCell(${item.id}, 'vlrNf', this.innerText)"` : '';
-                const dtOnInput = isEdit ? `oninput="maskDateCell(this, ${item.id}, 'dt')"` : '';
-                const vencOnInput = isEdit ? `oninput="maskDateCell(this, ${item.id}, 'venc')"` : '';
 
                 const pedidoOnKeydown = isEdit ? `onkeydown="navTable(event, this)"` : '';
                 const nfOnKeydown = isEdit ? `onkeydown="navTable(event, this)"` : '';
@@ -1524,10 +1522,10 @@
                         </select>
                     </td>
                     <td ${nfOnClick} contenteditable="${contentEditable}" class="${cellClassPedidoNfChave} ${hl}" id="cell-${item.id}-nf" ${nfOnBlur} ${nfOnKeydown} data-key="nf">${dv(item.nf)}</td>
-                    <td ${valorOnClick} contenteditable="${contentEditable}" class="${cellClassValor} ${hl}" id="cell-${item.id}-vlrNf" ${valorOnInput} ${valorOnBlur} ${valorOnKeydown} data-key="vlrNf">${dv(item.vlrNf)}</td>
-                    <td contenteditable="${isEdit ? 'true' : 'false'}" class="${hl}" id="cell-${item.id}-dt" ${dtOnInput} onblur="updateCellDate(this, ${item.id}, 'dt')" onkeydown="navTable(event, this)" data-key="dt">${dv(item.dt)}</td>
+                    <td ${valorOnClick} contenteditable="${contentEditable}" class="${cellClassValor} ${hl}" id="cell-${item.id}-vlrNf" ${valorOnBlur} ${valorOnKeydown} data-key="vlrNf">${dv(item.vlrNf)}</td>
+                    <td contenteditable="${isEdit ? 'true' : 'false'}" class="${hl}" id="cell-${item.id}-dt" onblur="updateCellDate(this, ${item.id}, 'dt')" onkeydown="navTable(event, this)" data-key="dt">${dv(item.dt)}</td>
                     <td contenteditable="${isEdit ? 'true' : 'false'}" class="${hl}" id="cell-${item.id}-infTrans" onblur="updateCell(${item.id}, 'infTrans', this.innerText)" onkeydown="navTable(event, this)" data-key="infTrans">${dv(item.infTrans)}</td>
-                    <td contenteditable="${isEdit ? 'true' : 'false'}" class="${hl}" id="cell-${item.id}-venc" ${vencOnInput} onblur="updateCellDate(this, ${item.id}, 'venc')" onkeydown="navTable(event, this)" data-key="venc">${dv(item.venc)}</td>
+                    <td contenteditable="${isEdit ? 'true' : 'false'}" class="${hl}" id="cell-${item.id}-venc" onblur="updateCellDate(this, ${item.id}, 'venc')" onkeydown="navTable(event, this)" data-key="venc">${dv(item.venc)}</td>
                     <td>
                         <select class="frete-sel" ${disabled} onchange="updateFrete(${item.id}, this.value)" style="width:100%; font-size:11px;">
                             ${freteOpts}
@@ -1656,201 +1654,93 @@
         }
 
         function maskPedidoInput(el) {
+            // Remove todos os não-dígitos
             let v = el.value.replace(/\D/g, '');
             
-            if (v.length > 0 && !v.startsWith('4500')) {
-                v = '4500' + v.replace(/^4500/, '');
-            }
-            
-            if (v.length < 4) {
-                v = '4500';
-            }
-            
-            if (v.length > 10) {
+            // Se começar com 4500, mantém como está (até 10 dígitos)
+            if (v.startsWith('4500')) {
                 v = v.substring(0, 10);
+            } 
+            // Se NÃO começar com 4500, adiciona 4500 na frente
+            else if (v.length > 0) {
+                v = '4500' + v;
+                v = v.substring(0, 10); // Limita a 10 dígitos
+            }
+            // Se estiver vazio, deixa vazio
+            else {
+                v = '';
             }
             
             el.value = v;
         }
 
+        // NOVA FUNÇÃO: Máscara em tempo real para célula PEDIDO na tabela
         function maskPedidoCell(cellElement, id) {
             if (!isEdit) return;
 
+            // Salva posição do cursor
             const selection = window.getSelection();
             const range = selection.getRangeAt(0);
             const cursorOffset = range.startOffset;
 
+            // Aplica máscara
             let text = cellElement.innerText;
             let v = text.replace(/\D/g, '');
             
-            if (v.length > 0 && !v.startsWith('4500')) {
-                v = '4500' + v.replace(/^4500/, '');
-            }
-            
-            if (v.length < 4) {
-                v = '4500';
-            }
-            
-            if (v.length > 10) {
+            // Se começar com 4500, mantém como está (até 10 dígitos)
+            if (v.startsWith('4500')) {
                 v = v.substring(0, 10);
+            } 
+            // Se NÃO começar com 4500, adiciona 4500 na frente
+            else if (v.length > 0) {
+                v = '4500' + v;
+                v = v.substring(0, 10); // Limita a 10 dígitos
+            }
+            // Se estiver vazio, deixa vazio
+            else {
+                v = '';
             }
 
+            // Atualiza célula se mudou
             if (cellElement.innerText !== v) {
                 cellElement.innerText = v;
 
+                // Restaura posição do cursor
                 try {
                     const textNode = cellElement.firstChild;
                     if (textNode) {
                         const newRange = document.createRange();
-                        const newOffset = Math.min(cursorOffset, v.length);
+                        const newOffset = Math.min(cursorOffset + 4, v.length); // Ajusta cursor após adicionar 4500
                         newRange.setStart(textNode, newOffset);
                         newRange.collapse(true);
                         selection.removeAllRanges();
                         selection.addRange(newRange);
                     }
                 } catch (e) {
+                    // Ignora erros de restauração de cursor
                 }
             }
         }
 
         function maskPedidoValue(text) {
+            // Remove todos os não-dígitos
             let v = String(text).replace(/\D/g, '');
             
-            if (v.length > 0 && !v.startsWith('4500')) {
-                v = '4500' + v.replace(/^4500/, '');
-            }
-            
-            if (v.length < 4) {
-                v = '4500';
-            }
-            
-            if (v.length > 10) {
+            // Se começar com 4500, mantém como está (até 10 dígitos)
+            if (v.startsWith('4500')) {
                 v = v.substring(0, 10);
+            } 
+            // Se NÃO começar com 4500, adiciona 4500 na frente
+            else if (v.length > 0) {
+                v = '4500' + v;
+                v = v.substring(0, 10); // Limita a 10 dígitos
+            }
+            // Se estiver vazio, deixa vazio
+            else {
+                v = '';
             }
             
             return v;
-        }
-
-        // NOVA FUNÇÃO: Máscara em tempo real para célula VALOR NF na tabela
-        function maskMoneyCell(cellElement, id) {
-            if (!isEdit) return;
-
-            // Salva posição do cursor
-            const selection = window.getSelection();
-            const range = selection.getRangeAt(0);
-            const cursorOffset = range.startOffset;
-
-            // Aplica máscara de dinheiro
-            let text = cellElement.innerText.replace(/[^\d]/g, '');
-            
-            if (text.length === 0) {
-                cellElement.innerText = '';
-                return;
-            }
-
-            // Formata como dinheiro
-            text = text.padStart(3, '0');
-            text = text.replace(/(\d)(\d{2})$/, '$1,$2');
-            text = text.replace(/(\d+)(\d{3},\d{2})$/, '$1.$2');
-            text = text.replace(/(\d+)(\d{3}\.\d{3},\d{2})$/, '$1.$2');
-            text = text.replace(/^0+(?=\d)/, '');
-            
-            const formatted = (text.length > 0) ? 'R$ ' + text : '';
-
-            // Atualiza célula se mudou
-            if (cellElement.innerText !== formatted) {
-                cellElement.innerText = formatted;
-
-                // Restaura posição do cursor
-                try {
-                    const textNode = cellElement.firstChild;
-                    if (textNode) {
-                        const newRange = document.createRange();
-                        const newOffset = Math.min(cursorOffset + (formatted.length - cellElement.innerText.length), formatted.length);
-                        newRange.setStart(textNode, Math.max(0, newOffset));
-                        newRange.collapse(true);
-                        selection.removeAllRanges();
-                        selection.addRange(newRange);
-                    }
-                } catch (e) {
-                    // Ignora erros de restauração de cursor
-                }
-            }
-        }
-
-        // NOVA FUNÇÃO: Máscara em tempo real para células de DATA (ENTREGA e VENC NF) na tabela
-        function maskDateCell(cellElement, id, key) {
-            if (!isEdit) return;
-
-            // Salva posição do cursor
-            const selection = window.getSelection();
-            const range = selection.getRangeAt(0);
-            const cursorOffset = range.startOffset;
-
-            // Aplica máscara de data
-            let text = cellElement.innerText.replace(/[^\d]/g, '');
-            
-            if (text.length === 0) {
-                cellElement.innerText = '';
-                return;
-            }
-
-            // Extrai dia e mês
-            let day = text.substring(0, 2);
-            let month = text.substring(2, 4);
-
-            // Valida e formata dia
-            if (day.length === 2) {
-                day = parseInt(day);
-                if (day > 31) day = 31;
-                if (day < 1) day = 1;
-                day = String(day).padStart(2, '0');
-            } else if (day.length === 1) {
-                day = String(day);
-            }
-
-            // Valida e formata mês
-            if (month.length === 2) {
-                month = parseInt(month);
-                if (month > 12) month = 12;
-                if (month < 1) month = 1;
-                month = String(month).padStart(2, '0');
-            } else if (month.length === 1) {
-                month = String(month);
-            }
-
-            // Formata com barra
-            let formatted = '';
-            if (text.length >= 3) {
-                formatted = day + '/' + month;
-            } else if (text.length > 0) {
-                formatted = day;
-            }
-
-            // Limita a 5 caracteres (DD/MM)
-            if (formatted.length > 5) {
-                formatted = formatted.substring(0, 5);
-            }
-
-            // Atualiza célula se mudou
-            if (cellElement.innerText !== formatted) {
-                cellElement.innerText = formatted;
-
-                // Restaura posição do cursor
-                try {
-                    const textNode = cellElement.firstChild;
-                    if (textNode) {
-                        const newRange = document.createRange();
-                        const newOffset = Math.min(cursorOffset, formatted.length);
-                        newRange.setStart(textNode, newOffset);
-                        newRange.collapse(true);
-                        selection.removeAllRanges();
-                        selection.addRange(newRange);
-                    }
-                } catch (e) {
-                    // Ignora erros de restauração de cursor
-                }
-            }
         }
 
         function maskDate(el) {
@@ -1875,17 +1765,82 @@
         }
 
         function maskMoney(el) {
+            // Remove tudo exceto dígitos
             let v = el.value.replace(/\D/g, '');
+            
             if (v.length === 0) {
                 el.value = '';
                 return;
             }
-            v = v.padStart(3, '0');
-            v = v.replace(/(\d)(\d{2})$/, '$1,$2');
-            v = v.replace(/(\d+)(\d{3},\d{2})$/, '$1.$2');
-            v = v.replace(/(\d+)(\d{3}\.\d{3},\d{2})$/, '$1.$2');
-            v = v.replace(/^0+(?=\d)/, '');
-            el.value = (v.length > 0) ? 'R$ ' + v : '';
+            
+            // Converte para número (centavos)
+            let valorEmCentavos = parseInt(v, 10);
+            
+            // Divide por 100 para obter o valor em reais
+            let valorEmReais = valorEmCentavos / 100;
+            
+            // Formata para moeda brasileira
+            el.value = 'R$ ' + valorEmReais.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        // NOVA FUNÇÃO: Máscara monetária para células da tabela
+        function maskMoneyCell(cellElement) {
+            if (!isEdit) return;
+            
+            // Salva posição do cursor
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            const cursorOffset = range.startOffset;
+            
+            // Aplica máscara
+            let text = cellElement.innerText;
+            let v = text.replace(/\D/g, '');
+            
+            if (v.length === 0) {
+                cellElement.innerText = '';
+                return;
+            }
+            
+            // Converte para número (centavos)
+            let valorEmCentavos = parseInt(v, 10);
+            
+            // Divide por 100 para obter o valor em reais
+            let valorEmReais = valorEmCentavos / 100;
+            
+            // Formata para moeda brasileira
+            const formattedValue = 'R$ ' + valorEmReais.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            
+            // Atualiza célula se mudou
+            if (cellElement.innerText !== formattedValue) {
+                cellElement.innerText = formattedValue;
+                
+                // Restaura posição do cursor
+                try {
+                    const textNode = cellElement.firstChild;
+                    if (textNode) {
+                        const newRange = document.createRange();
+                        // Tenta manter a posição relativa do cursor
+                        let newOffset = cursorOffset;
+                        // Ajusta considerando a nova formatação
+                        if (cursorOffset >= text.length) {
+                            newOffset = formattedValue.length;
+                        }
+                        newOffset = Math.min(newOffset, formattedValue.length);
+                        newRange.setStart(textNode, newOffset);
+                        newRange.collapse(true);
+                        selection.removeAllRanges();
+                        selection.addRange(newRange);
+                    }
+                } catch (e) {
+                    // Ignora erros de restauração de cursor
+                }
+            }
         }
 
         function formatCellDate(text) {
@@ -2213,6 +2168,13 @@
                 reader.readAsText(file);
             };
             input.click();
+        }
+
+        // ============================================= 
+        // FUNÇÃO LISTA NF-E
+        // ============================================= 
+        function openListaNFe() {
+            window.open('https://luizcezarmelo.github.io/Compras/fiori.html', '_blank');
         }
 
         // ============================================= 
