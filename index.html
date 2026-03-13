@@ -674,7 +674,17 @@
         }
 
         td[data-key="obs"]  { text-align: left !important; }
+        td[data-key="dae"]  { text-align: left !important; }
         td[data-key="vlrNf"]{ text-align: center !important; font-family: var(--mono); }
+
+        /* Colunas com largura mínima reduzida — ainda expandem pelo conteúdo (table-layout:auto) */
+        th[data-key="dtLancamento"] { min-width: 68px; }
+        th[data-key="forn"]         { min-width: 70px; }
+        th[data-key="comp"]         { min-width: 60px; }
+        th[data-key="infTrans"]     { min-width: 60px; }
+        th[data-key="venc"]         { min-width: 56px; }
+        /* Setor: um pouco mais largo que o mínimo original */
+        th[data-key="setor"]        { min-width: 80px; }
 
         .hl { background: #fff8dc !important; }
 
@@ -1007,18 +1017,19 @@
                     <tr>
                         <th style="width:36px;" data-key="_num">#</th>
                         <th data-key="status">STATUS <span class="filter-btn" onclick="showFilter(event,'status')">▼</span></th>
-                        <th data-key="dtLancamento">LANÇAMENTO <span class="filter-btn" onclick="showFilter(event,'dtLancamento')">▼</span></th>
+                        <th data-key="dtLancamento">LANÇ. <span class="filter-btn" onclick="showFilter(event,'dtLancamento')">▼</span></th>
                         <th data-key="pedido">PEDIDO <span class="filter-btn" onclick="showFilter(event,'pedido')">▼</span></th>
-                        <th data-key="forn">FORNECEDOR <span class="filter-btn" onclick="showFilter(event,'forn')">▼</span></th>
-                        <th data-key="comp">COMPRADOR <span class="filter-btn" onclick="showFilter(event,'comp')">▼</span></th>
+                        <th data-key="forn">FORN. <span class="filter-btn" onclick="showFilter(event,'forn')">▼</span></th>
+                        <th data-key="comp">COMP. <span class="filter-btn" onclick="showFilter(event,'comp')">▼</span></th>
                         <th data-key="setor">SETOR <span class="filter-btn" onclick="showFilter(event,'setor')">▼</span></th>
                         <th data-key="nf">NF <span class="filter-btn" onclick="showFilter(event,'nf')">▼</span></th>
                         <th data-key="vlrNf">VALOR NF <span class="filter-btn" onclick="showFilter(event,'vlrNf')">▼</span></th>
                         <th data-key="dt">ENTREGA <span class="filter-btn" onclick="showFilter(event,'dt')">▼</span></th>
-                        <th data-key="infTrans">INF. TRANSP. <span class="filter-btn" onclick="showFilter(event,'infTrans')">▼</span></th>
-                        <th data-key="venc">VENC. NF <span class="filter-btn" onclick="showFilter(event,'venc')">▼</span></th>
+                        <th data-key="infTrans">INF.TR. <span class="filter-btn" onclick="showFilter(event,'infTrans')">▼</span></th>
+                        <th data-key="venc">VENC. <span class="filter-btn" onclick="showFilter(event,'venc')">▼</span></th>
                         <th data-key="frete">FRETE <span class="filter-btn" onclick="showFilter(event,'frete')">▼</span></th>
                         <th data-key="chave">CHAVE</th>
+                        <th data-key="dae">DAE <span class="filter-btn" onclick="showFilter(event,'dae')">▼</span></th>
                         <th data-key="obs">OBS <span class="filter-btn" onclick="showFilter(event,'obs')">▼</span></th>
                     </tr>
                 </thead>
@@ -1373,6 +1384,7 @@ async function addItem() {
             venc:    document.getElementById('in-venc').value,
             frete:   '',
             chave:   '',
+            dae:     '',
             obs:     document.getElementById('in-obs').value
         };
         dbPedidos.push(novo);
@@ -1599,6 +1611,7 @@ function renderMain() {
             <td contenteditable="${ce}" class="${hl}" id="cell-${item.id}-venc" onblur="updateCellDate(this,${item.id},'venc')" ${kd} ${paste} data-key="venc">${dv(item.venc)}</td>
             <td data-key="frete"><select class="frete-sel" ${dis} onchange="updateFrete(${item.id},this.value)">${freteOpts}</select></td>
             <td ${copyOrEdit('chave',' cell-chave')} ${blurSave('chave')} ${kd} ${paste}>${dv(item.chave)}</td>
+            <td ${copyOrEdit('dae','')} ${blurSave('dae')} ${kd} ${paste}>${dv(item.dae)}</td>
             <td contenteditable="${ce}" class="${hl}" id="cell-${item.id}-obs" ${blurSave('obs')} ${kd} ${paste} data-key="obs">${dv(item.obs)}</td>
         `;
         tbody.appendChild(tr);
@@ -1897,8 +1910,8 @@ function generateReport() {
     });
 
     const win = window.open('','','width=1100,height=650');
-    let rows = filtered.map(i => `<tr><td>${i.status||''}</td><td>${i.pedido||''}</td><td>${i.forn||''}</td><td>${i.nf||''}</td><td>${i.vlrNf||''}</td><td>${i.dt||''}</td><td>${i.frete||''}</td><td>${i.obs||''}</td></tr>`).join('');
-    win.document.write(`<html><head><title>RELATÓRIO</title><style>body{font-family:sans-serif;font-size:10px;text-transform:uppercase;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #999;padding:4px;text-align:center;}th{background:#1e2b3a;color:#fff;}tr:nth-child(even){background:#f4f8fb;}</style></head><body><h2>RELATÓRIO DE PEDIDOS — ${getTodayDate()} (${filtered.length} REGISTROS)</h2><table><thead><tr><th>STATUS</th><th>PEDIDO</th><th>FORNECEDOR</th><th>NF</th><th>VALOR NF</th><th>ENTREGA</th><th>FRETE</th><th>OBS</th></tr></thead><tbody>${rows}</tbody></table><br><button onclick="window.print()">IMPRIMIR</button></body></html>`);
+    let rows = filtered.map(i => `<tr><td>${i.status||''}</td><td>${i.pedido||''}</td><td>${i.forn||''}</td><td>${i.nf||''}</td><td>${i.vlrNf||''}</td><td>${i.dt||''}</td><td>${i.frete||''}</td><td>${i.dae||''}</td><td>${i.obs||''}</td></tr>`).join('');
+    win.document.write(`<html><head><title>RELATÓRIO</title><style>body{font-family:sans-serif;font-size:10px;text-transform:uppercase;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #999;padding:4px;text-align:center;}th{background:#1e2b3a;color:#fff;}tr:nth-child(even){background:#f4f8fb;}</style></head><body><h2>RELATÓRIO DE PEDIDOS — ${getTodayDate()} (${filtered.length} REGISTROS)</h2><table><thead><tr><th>STATUS</th><th>PEDIDO</th><th>FORNECEDOR</th><th>NF</th><th>VALOR NF</th><th>ENTREGA</th><th>FRETE</th><th>DAE</th><th>OBS</th></tr></thead><tbody>${rows}</tbody></table><br><button onclick="window.print()">IMPRIMIR</button></body></html>`);
 }
 
 function downloadJSON(data, prefix) {
