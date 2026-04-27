@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1215,7 +1214,7 @@ async function tryAutoLoad() {
 function loadData(data) {
     dbPedidos = data.db_pedidos || [];
     dbTrash   = data.db_lixeira || [];
-    dbPedidos.sort((a, b) => a.id - b.id);
+    dbPedidos.sort((a, b) => (parseInt(a.pedido) || 0) - (parseInt(b.pedido) || 0));
     renderMain();
 }
 
@@ -1388,7 +1387,7 @@ async function addItem() {
             obs:     document.getElementById('in-obs').value
         };
         dbPedidos.push(novo);
-        dbPedidos.sort((a, b) => a.id - b.id);
+        dbPedidos.sort((a, b) => (parseInt(a.pedido) || 0) - (parseInt(b.pedido) || 0));
         await saveToFile();
         document.querySelectorAll('.input-grid input').forEach(i => i.value = '');
         document.getElementById('in-pedido').value = '4500';
@@ -1859,7 +1858,7 @@ async function restore(id) {
     item.status = '';
     delete item.dtExclusao;
     dbPedidos.push(item);
-    dbPedidos.sort((a,b)=>a.id-b.id);
+    dbPedidos.sort((a, b) => (parseInt(a.pedido) || 0) - (parseInt(b.pedido) || 0));
     await saveToFile();
     renderTrash();
     renderMain();
