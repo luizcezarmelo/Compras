@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -379,16 +378,6 @@
             color: #0c5460;
             border-left: 4px solid #17a2b8;
         }
-
-        .debug-info {
-            margin-top: 5px;
-            padding: 3px 6px;
-            background: #f8f9fa;
-            border: 1px solid #ddd;
-            font-size: 10px;
-            color: #666;
-            display: inline-block;
-        }
     </style>
 </head>
 <body>
@@ -413,8 +402,8 @@
                 🔄 RECUPERAR
             </button>
             
-            <button class="btn btn-danger" onclick="excluirMarcados()">
-                🗑️ EXCLUIR
+            <button class="btn btn-danger" onclick="limparDados()">
+                🗑️ LIMPAR
             </button>
 
             <div class="search-wrapper">
@@ -427,17 +416,13 @@
                 <button class="btn-icon" onclick="adicionarExcecao()">+</button>
                 <button class="btn-icon" onclick="abrirModalExcecoes()">🔍</button>
             </div>
-
-            <button class="btn" onclick="verificarEstado()" style="margin-left: 10px;">
-                🔍 DEBUG
-            </button>
         </div>
 
         <div class="table-container">
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 50px;"><input type="checkbox" id="checkboxAll" onchange="toggleTodos()"></th>
+                        <th style="width: 50px;"><input type="checkbox" id="checkboxMarcarTodos" onchange="toggleMarcarTodos(this.checked)"></th>
                         <th style="width: 150px;">CNPJ EMIT.</th>
                         <th style="width: 110px;">DATA EMISSÃO</th>
                         <th style="width: 120px;">NOTA FISCAL</th>
@@ -470,14 +455,13 @@
         import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyC87U4DwYdrbHpok8r1ky893ruU-o6OXD8",
-            authDomain: "trabalho-e99e3.firebaseapp.com",
-            databaseURL: "https://trabalho-e99e3-default-rtdb.firebaseio.com",
-            projectId: "trabalho-e99e3",
-            storageBucket: "trabalho-e99e3.firebasestorage.app",
-            messagingSenderId: "272958172515",
-            appId: "1:272958172515:web:0b93d2681101251ed8b756",
-            measurementId: "G-27FYQZX7HH"
+            apiKey: "AIzaSyBiikcagIm1p7wJG6DsHijkvdy1fpDBn8Y",
+            authDomain: "bd-teste-c931c.firebaseapp.com",
+            databaseURL: "https://bd-teste-c931c-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "bd-teste-c931c",
+            storageBucket: "bd-teste-c931c.firebasestorage.app",
+            messagingSenderId: "270308100761",
+            appId: "1:270308100761:web:ae34fde6d5ae86b67b0608"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -486,7 +470,6 @@
         let lancamentos = [];
         let excecoes = [];
         let termoPesquisa = '';
-        let lastCheckedIndex = -1;
 
         document.getElementById('searchInput').addEventListener('input', function(e) {
             termoPesquisa = e.target.value.trim();
@@ -495,13 +478,6 @@
                 aplicarPesquisa();
             } else if (termoPesquisa.length === 0) {
                 limparPesquisa();
-            }
-        });
-
-        document.getElementById('exceptionInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                adicionarExcecao();
             }
         });
 
@@ -535,20 +511,6 @@
             }
         };
 
-        window.toggleTodos = function() {
-            const checkboxAll = document.getElementById('checkboxAll');
-            const marcado = checkboxAll.checked;
-            
-            lancamentos.forEach(lancamento => {
-                if (!lancamento.filtrado) {
-                    lancamento.marcado = marcado;
-                }
-            });
-            
-            salvarLancamentos();
-            renderizarTabela();
-        };
-
         window.adicionarExcecao = async function() {
             const input = document.getElementById('exceptionInput');
             const nomeExcecao = input.value.trim();
@@ -567,7 +529,6 @@
             await salvarExcecoes();
             input.value = '';
             aplicarFiltroExcecoes();
-            await salvarLancamentos();
             mostrarStatus('Exceção adicionada com sucesso', 'success');
         };
 
@@ -575,7 +536,6 @@
             excecoes = excecoes.filter(e => e !== nome);
             await salvarExcecoes();
             aplicarFiltroExcecoes();
-            await salvarLancamentos();
             mostrarStatus('Exceção removida com sucesso', 'success');
             renderizarModalExcecoes();
         };
@@ -594,12 +554,9 @@
                 const snapshot = await get(ref(database, 'excecoes'));
                 if (snapshot.exists()) {
                     excecoes = snapshot.val() || [];
-                } else {
-                    excecoes = [];
                 }
             } catch (error) {
                 console.error('Erro ao carregar exceções:', error);
-                excecoes = [];
             }
         }
 
@@ -641,38 +598,12 @@
 
         function aplicarFiltroExcecoes() {
             lancamentos.forEach(lancamento => {
-                const nomeEmit = lancamento.nomeEmit.trim().toLowerCase();
+                const nomeEmit = lancamento.nomeEmit.trim();
                 lancamento.filtrado = excecoes.some(excecao => 
-                    nomeEmit.includes(excecao.toLowerCase())
+                    nomeEmit.toLowerCase().includes(excecao.toLowerCase())
                 );
             });
             renderizarTabela();
-        }
-
-        function converterDataParaOrdenacao(dataStr) {
-            const partes = dataStr.split(' ')[0].split('.');
-            if (partes.length === 3) {
-                const dia = parseInt(partes[0]);
-                const mes = parseInt(partes[1]) - 1;
-                const ano = parseInt(partes[2]);
-                
-                const tempoPartes = dataStr.split(' ');
-                if (tempoPartes.length > 1) {
-                    const [hora, minuto, segundo] = tempoPartes[1].split(':').map(n => parseInt(n) || 0);
-                    return new Date(ano, mes, dia, hora, minuto, segundo);
-                }
-                
-                return new Date(ano, mes, dia);
-            }
-            return new Date(0);
-        }
-
-        function ordenarLancamentosPorData() {
-            lancamentos.sort((a, b) => {
-                const importacaoA = a.dataImportacao || 0;
-                const importacaoB = b.dataImportacao || 0;
-                return importacaoB - importacaoA;
-            });
         }
 
         document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -695,16 +626,10 @@
                 const linhas = conteudo.split('\n');
                 let novosLancamentos = 0;
                 let duplicados = 0;
-                const dataImportacao = Date.now();
 
-                console.log('=== PROCESSANDO ARQUIVO ===');
-                console.log('Total de linhas no arquivo:', linhas.length);
-
-                for (const [index, linha] of linhas.entries()) {
+                for (const linha of linhas) {
                     if (linha.includes('|') && !linha.includes('CNPJ Emit.') && !linha.includes('---')) {
                         const dados = linha.split('|').map(item => item.trim()).filter(item => item);
-                        
-                        console.log(`Linha ${index}:`, dados);
                         
                         if (dados.length >= 6) {
                             const lancamento = {
@@ -715,14 +640,10 @@
                                 nomeEmit: dados[4],
                                 chaveAcesso: dados[5],
                                 marcado: false,
-                                filtrado: false,
-                                dataImportacao: dataImportacao
+                                filtrado: false
                             };
 
                             const jaExiste = lancamentos.some(l => l.chaveAcesso === lancamento.chaveAcesso);
-                            
-                            console.log('Chave de acesso:', lancamento.chaveAcesso);
-                            console.log('Já existe?', jaExiste);
                             
                             if (!jaExiste) {
                                 lancamento.filtrado = excecoes.some(excecao => 
@@ -730,21 +651,13 @@
                                 );
                                 lancamentos.push(lancamento);
                                 novosLancamentos++;
-                                console.log('✅ Novo lançamento adicionado');
                             } else {
                                 duplicados++;
-                                console.log('⏭️ Duplicado ignorado');
                             }
                         }
                     }
                 }
 
-                console.log('=== RESULTADO DO PROCESSAMENTO ===');
-                console.log('Total após processamento:', lancamentos.length);
-                console.log('Novos lançamentos:', novosLancamentos);
-                console.log('Duplicados:', duplicados);
-                
-                ordenarLancamentosPorData();
                 await salvarLancamentos();
                 renderizarTabela();
                 
@@ -758,7 +671,6 @@
         async function salvarLancamentos() {
             try {
                 await set(ref(database, 'lancamentos'), lancamentos);
-                console.log('Lançamentos salvos no Firebase');
             } catch (error) {
                 console.error('Erro ao salvar lançamentos:', error);
                 mostrarStatus('Erro ao salvar lançamentos', 'error');
@@ -770,101 +682,62 @@
                 const snapshot = await get(ref(database, 'lancamentos'));
                 if (snapshot.exists()) {
                     lancamentos = snapshot.val() || [];
-                    lancamentos = lancamentos.map(l => ({
-                        ...l,
-                        marcado: l.marcado === true,
-                        filtrado: l.filtrado === true
-                    }));
-                    console.log('Lançamentos carregados:', lancamentos.length);
-                    ordenarLancamentosPorData();
-                    aplicarFiltroExcecoes();
-                } else {
-                    lancamentos = [];
-                    console.log('Nenhum lançamento encontrado no Firebase');
+                    renderizarTabela();
                 }
             } catch (error) {
                 console.error('Erro ao carregar lançamentos:', error);
-                lancamentos = [];
             }
+        }
+
+        function converterDataParaOrdenacao(dataStr) {
+            const partes = dataStr.trim().split('.');
+            if (partes.length !== 3) return new Date(0);
+            const [dia, mes, ano] = partes;
+            return new Date(`${ano}-${mes}-${dia}`);
         }
 
         function renderizarTabela() {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
 
-            const lancamentosFiltrados = lancamentos.filter(l => !l.filtrado);
+            const lancamentosFiltrados = lancamentos
+                .filter(l => !l.filtrado)
+                .sort((a, b) => converterDataParaOrdenacao(b.dataEmissao) - converterDataParaOrdenacao(a.dataEmissao));
 
-            console.log('=== RENDERIZANDO TABELA ===');
-            console.log('Total de lançamentos:', lancamentos.length);
-            console.log('Lançamentos filtrados:', lancamentos.filter(l => l.filtrado).length);
-            console.log('Lançamentos visíveis:', lancamentosFiltrados.length);
+            const checkboxMarcarTodos = document.getElementById('checkboxMarcarTodos');
 
             if (lancamentosFiltrados.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum lançamento encontrado</td></tr>';
-                document.getElementById('checkboxAll').checked = false;
+                if (checkboxMarcarTodos) {
+                    checkboxMarcarTodos.checked = false;
+                    checkboxMarcarTodos.indeterminate = false;
+                }
                 return;
             }
 
-            const todosMarcados = lancamentosFiltrados.every(l => l.marcado);
-            document.getElementById('checkboxAll').checked = todosMarcados;
-
-            lancamentosFiltrados.forEach((lancamento, indexFiltrado) => {
-                const indexOriginal = lancamentos.indexOf(lancamento);
+            lancamentosFiltrados.forEach((lancamento, index) => {
                 const tr = document.createElement('tr');
                 if (lancamento.marcado) {
                     tr.className = 'checked';
                 }
                 
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = lancamento.marcado;
-                checkbox.addEventListener('click', function(event) {
-                    toggleMarcado(indexOriginal, indexFiltrado, event);
-                });
-                
-                const tdCheckbox = document.createElement('td');
-                tdCheckbox.appendChild(checkbox);
-                
-                const tdCnpj = document.createElement('td');
-                tdCnpj.textContent = lancamento.cnpj;
-                
-                const tdData = document.createElement('td');
-                tdData.textContent = lancamento.dataEmissao;
-                
-                const tdNota = document.createElement('td');
-                tdNota.className = 'copyable';
-                tdNota.textContent = lancamento.notaFiscal;
-                tdNota.addEventListener('click', function(event) {
-                    copiarParaAreaTransferencia(lancamento.notaFiscal, event);
-                });
-                
-                const tdValor = document.createElement('td');
-                tdValor.className = 'copyable';
-                tdValor.textContent = lancamento.valorTotal;
-                tdValor.addEventListener('click', function(event) {
-                    copiarParaAreaTransferencia(lancamento.valorTotal, event);
-                });
-                
-                const tdNome = document.createElement('td');
-                tdNome.textContent = lancamento.nomeEmit;
-                
-                const tdChave = document.createElement('td');
-                tdChave.className = 'copyable';
-                tdChave.textContent = lancamento.chaveAcesso;
-                tdChave.addEventListener('click', function(event) {
-                    copiarParaAreaTransferencia(lancamento.chaveAcesso, event);
-                });
-                
-                tr.appendChild(tdCheckbox);
-                tr.appendChild(tdCnpj);
-                tr.appendChild(tdData);
-                tr.appendChild(tdNota);
-                tr.appendChild(tdValor);
-                tr.appendChild(tdNome);
-                tr.appendChild(tdChave);
-                
+                tr.innerHTML = `
+                    <td><input type="checkbox" ${lancamento.marcado ? 'checked' : ''} onchange="toggleMarcado(${lancamentos.indexOf(lancamento)})"></td>
+                    <td>${lancamento.cnpj}</td>
+                    <td>${lancamento.dataEmissao}</td>
+                    <td class="copyable" onclick="copiarParaAreaTransferencia('${lancamento.notaFiscal}', event)">${lancamento.notaFiscal}</td>
+                    <td>${lancamento.valorTotal}</td>
+                    <td>${lancamento.nomeEmit}</td>
+                    <td class="copyable" onclick="copiarParaAreaTransferencia('${lancamento.chaveAcesso}', event)">${lancamento.chaveAcesso}</td>
+                `;
                 tbody.appendChild(tr);
             });
+
+            if (checkboxMarcarTodos) {
+                const totalMarcados = lancamentosFiltrados.filter(l => l.marcado).length;
+                checkboxMarcarTodos.checked = totalMarcados === lancamentosFiltrados.length;
+                checkboxMarcarTodos.indeterminate = totalMarcados > 0 && totalMarcados < lancamentosFiltrados.length;
+            }
         }
 
         window.copiarParaAreaTransferencia = async function(texto, event) {
@@ -888,54 +761,36 @@
             }
         };
 
-        window.toggleMarcado = async function(indexOriginal, indexFiltrado, event) {
-            const shiftPressed = event.shiftKey;
-            
-            lancamentos[indexOriginal].marcado = !lancamentos[indexOriginal].marcado;
-            const novoEstado = lancamentos[indexOriginal].marcado;
-            
-            if (shiftPressed && lastCheckedIndex !== -1 && lastCheckedIndex !== indexFiltrado) {
-                const lancamentosFiltrados = lancamentos.filter(l => !l.filtrado);
-                const start = Math.min(lastCheckedIndex, indexFiltrado);
-                const end = Math.max(lastCheckedIndex, indexFiltrado);
-                
-                for (let i = start; i <= end; i++) {
-                    const lancamentoFiltrado = lancamentosFiltrados[i];
-                    const indexNaListaOriginal = lancamentos.indexOf(lancamentoFiltrado);
-                    if (indexNaListaOriginal !== -1) {
-                        lancamentos[indexNaListaOriginal].marcado = novoEstado;
-                    }
-                }
-            }
-            
-            lastCheckedIndex = indexFiltrado;
-            
+        window.toggleMarcado = async function(index) {
+            lancamentos[index].marcado = !lancamentos[index].marcado;
             await salvarLancamentos();
             renderizarTabela();
         };
 
-        window.excluirMarcados = async function() {
-            const marcados = lancamentos.filter(l => l.marcado && !l.filtrado);
-            
-            if (marcados.length === 0) {
-                mostrarStatus('Nenhum lançamento marcado para excluir', 'error');
-                return;
-            }
-
-            if (confirm(`Tem certeza que deseja excluir ${marcados.length} lançamento(s) marcado(s)?`)) {
-                lancamentos = lancamentos.filter(l => !(l.marcado && !l.filtrado));
-                await salvarLancamentos();
-                renderizarTabela();
-                mostrarStatus(`${marcados.length} lançamento(s) excluído(s) com sucesso`, 'success');
-            }
+        window.toggleMarcarTodos = async function(marcarTudo) {
+            lancamentos
+                .filter(l => !l.filtrado)
+                .forEach(l => {
+                    l.marcado = marcarTudo;
+                });
+            await salvarLancamentos();
+            renderizarTabela();
         };
 
         window.recuperarDados = async function() {
             mostrarStatus('Recuperando dados...', 'info');
             await carregarExcecoes();
             await carregarLancamentos();
-            renderizarTabela();
             mostrarStatus('Dados recuperados com sucesso', 'success');
+        };
+
+        window.limparDados = async function() {
+            if (confirm('Tem certeza que deseja limpar todos os lançamentos? As exceções serão mantidas.')) {
+                lancamentos = [];
+                await remove(ref(database, 'lancamentos'));
+                renderizarTabela();
+                mostrarStatus('Lançamentos removidos com sucesso', 'success');
+            }
         };
 
         window.exportarDados = function() {
@@ -986,36 +841,9 @@
             }, 4000);
         }
 
-        window.verificarEstado = function() {
-            const lancamentosFiltrados = lancamentos.filter(l => l.filtrado);
-            const lancamentosVisiveis = lancamentos.filter(l => !l.filtrado);
-            
-            console.log('=== ESTADO ATUAL ===');
-            console.log('Total de lançamentos:', lancamentos.length);
-            console.log('Lançamentos filtrados (ocultos):', lancamentosFiltrados.length);
-            console.log('Lançamentos visíveis:', lancamentosVisiveis.length);
-            console.log('Exceções cadastradas:', excecoes);
-            console.log('Lançamentos filtrados:', lancamentosFiltrados.map(l => l.nomeEmit));
-            console.log('Lançamentos visíveis:', lancamentosVisiveis.map(l => l.nomeEmit));
-            
-            const mensagem = `
-                Total: ${lancamentos.length}
-                Filtrados: ${lancamentosFiltrados.length}
-                Visíveis: ${lancamentosVisiveis.length}
-                Exceções: ${excecoes.length}
-                
-                Exceções: ${excecoes.join(', ') || 'Nenhuma'}
-            `;
-            
-            alert(mensagem);
-        };
-
         window.addEventListener('DOMContentLoaded', async () => {
-            console.log('=== INICIALIZANDO APLICAÇÃO ===');
             await carregarExcecoes();
             await carregarLancamentos();
-            renderizarTabela();
-            console.log('=== APLICAÇÃO INICIALIZADA ===');
         });
     </script>
 </body>
