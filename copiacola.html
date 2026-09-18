@@ -1,0 +1,917 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Textos Predefinidos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+  :root{
+    --paper: #F5F6F7;
+    --paper-2: #E9EDF2;
+    --ink: #1D2D3E;
+    --ink-soft: #5A6470;
+    --line: #D3D7DD;
+    --teal: #0070F2;
+    --teal-dark: #05408A;
+    --teal-tint: #E5F1FF;
+    --amber: #E9730C;
+    --danger: #BB0000;
+    --danger-tint: #FFEBEB;
+    --radius: 4px;
+    --font-display: 'Inter', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    height: 100%;
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+  }
+
+  button{ font-family: inherit; cursor: pointer; }
+  textarea, input{ font-family: inherit; }
+
+  /* ---------- Tela de PIN ---------- */
+  #pin-screen{
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--paper);
+    z-index: 50;
+  }
+  #pin-screen.hidden{ display: none; }
+  .pin-card{
+    width: 100%;
+    max-width: 340px;
+    padding: 36px 32px;
+    text-align: center;
+  }
+  .pin-card h1{
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 28px;
+    margin: 0 0 6px;
+  }
+  .pin-card p{
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin: 0 0 24px;
+  }
+  .pin-input-row{
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+  .pin-input-row input{
+    width: 100%;
+    text-align: center;
+    letter-spacing: 6px;
+    font-size: 20px;
+    padding: 12px 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: #fff;
+    color: var(--ink);
+  }
+  .pin-input-row input:focus{
+    outline: none;
+    border-color: var(--teal);
+  }
+  .pin-error{
+    color: var(--danger);
+    font-size: 13px;
+    min-height: 18px;
+    margin-bottom: 10px;
+  }
+  .pin-card button.primary{
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: var(--radius);
+    background: var(--teal);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .pin-card button.primary:hover{ background: var(--teal-dark); }
+  .shake{ animation: shake 0.35s; }
+  @keyframes shake{
+    0%,100%{ transform: translateX(0); }
+    25%{ transform: translateX(-8px); }
+    75%{ transform: translateX(8px); }
+  }
+  .pin-hint-toggle{
+    background: none; border: none; color: var(--ink-soft);
+    font-size: 12px; text-decoration: underline; margin-top: 4px;
+  }
+
+  /* ---------- Layout do app ---------- */
+  #app{
+    display: none;
+    height: 100vh;
+  }
+  #app.visible{ display: flex; }
+
+  #sidebar{
+    width: 280px;
+    max-width: 32%;
+    min-width: 200px;
+    flex-shrink: 0;
+    background: var(--paper-2);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  #sidebar-header{
+    padding: 20px 18px 12px;
+  }
+  #sidebar-header h1{
+    font-family: var(--font-display);
+    font-size: 21px;
+    font-weight: 600;
+    margin: 0 0 2px;
+  }
+  #sidebar-header .save-status{
+    font-size: 11px;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .save-dot{
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--teal);
+    opacity: 0;
+  }
+  .save-dot.pulse{ animation: pulseDot 1.4s ease; }
+  @keyframes pulseDot{
+    0%{ opacity: 1; transform: scale(1.4); }
+    100%{ opacity: 0; transform: scale(1); }
+  }
+
+  #tema-list{
+    list-style: none;
+    margin: 0;
+    padding: 4px 10px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .tema-item{
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 6px;
+    margin-bottom: 2px;
+    border-left: 3px solid transparent;
+  }
+  .tema-item:hover{ background: rgba(0,0,0,0.03); }
+  .tema-item.active{
+    background: #fff;
+    border-left-color: var(--teal);
+  }
+  .tema-item .tema-nome{
+    flex: 1;
+    padding: 9px 6px;
+    font-size: 14.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border: none;
+    background: transparent;
+    text-align: left;
+    color: var(--ink);
+  }
+  .tema-item.active .tema-nome{ font-weight: 600; }
+  .tema-actions{
+    display: flex;
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
+  .tema-item:hover .tema-actions{ opacity: 1; }
+  .icon-btn{
+    border: none;
+    background: transparent;
+    color: var(--ink-soft);
+    padding: 4px;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1;
+  }
+  .icon-btn:hover{ background: rgba(0,0,0,0.07); color: var(--ink); }
+  .icon-btn.danger:hover{ background: var(--danger-tint); color: var(--danger); }
+
+  .tema-rename-input{
+    flex: 1;
+    padding: 8px 6px;
+    font-size: 14.5px;
+    border: 1px solid var(--teal);
+    border-radius: 4px;
+    background: #fff;
+  }
+
+  #sidebar-footer{
+    padding: 12px 16px 18px;
+    border-top: 1px solid var(--line);
+  }
+  #add-tema-btn{
+    width: 100%;
+    padding: 9px;
+    background: transparent;
+    border: 1px dashed var(--ink-soft);
+    border-radius: var(--radius);
+    color: var(--ink-soft);
+    font-size: 13.5px;
+  }
+  #add-tema-btn:hover{ border-color: var(--teal); color: var(--teal); }
+
+  .backup-links{
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .backup-links button{
+    background: none; border: none; color: var(--ink-soft);
+    font-size: 11px; text-decoration: underline;
+  }
+  .backup-links button:hover{ color: var(--teal); }
+  #import-file-input{ display: none; }
+
+  /* ---------- Painel principal ---------- */
+  #main{
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 40px 60px;
+  }
+  #main-empty{
+    color: var(--ink-soft);
+    font-size: 15px;
+    margin-top: 60px;
+    text-align: center;
+  }
+  #main-header{
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  #tema-titulo{
+    font-family: var(--font-display);
+    font-size: 27px;
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    padding: 2px 0;
+    width: 100%;
+    max-width: 480px;
+  }
+  #tema-titulo:focus{
+    outline: none;
+    border-bottom: 1px solid var(--teal);
+  }
+  #add-texto-btn{
+    padding: 9px 16px;
+    background: var(--teal);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 13.5px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  #add-texto-btn:hover{ background: var(--teal-dark); }
+
+  #texto-list-empty{
+    color: var(--ink-soft);
+    font-size: 14px;
+    padding: 20px 0;
+  }
+
+  .texto-card{
+    background: #fff;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--teal);
+    border-radius: var(--radius);
+    padding: 14px 16px 12px;
+    margin-bottom: 16px;
+  }
+  .texto-card textarea{
+    width: 100%;
+    min-height: 70px;
+    border: none;
+    resize: none;
+    overflow: hidden;
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--ink);
+    padding: 2px 0 10px;
+  }
+  .texto-card textarea:focus{ outline: none; }
+  .texto-toolbar{
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    border-top: 1px solid var(--paper-2);
+    padding-top: 8px;
+  }
+  .reorder-group{
+    margin-right: auto;
+    display: flex;
+    gap: 2px;
+  }
+  .copy-btn{
+    padding: 7px 14px;
+    border: 1px solid var(--teal);
+    background: var(--teal-tint);
+    color: var(--teal-dark);
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 84px;
+  }
+  .copy-btn:hover{ background: var(--teal); color: #fff; }
+  .copy-btn.copied{ background: var(--teal); color: #fff; }
+
+  @media (max-width: 720px){
+    #app.visible{ flex-direction: column; }
+    #sidebar{ width: 100%; max-width: 100%; height: auto; max-height: 40vh; border-right: none; border-bottom: 1px solid var(--line); }
+    #main{ padding: 20px 18px 60px; }
+  }
+</style>
+</head>
+<body>
+
+  <div id="pin-screen">
+    <div class="pin-card" id="pin-card-content">
+      <!-- preenchido via JS -->
+    </div>
+  </div>
+
+  <div id="app">
+    <aside id="sidebar">
+      <div id="sidebar-header">
+        <h1>Textos</h1>
+        <div class="save-status"><span class="save-dot" id="save-dot"></span><span id="save-label">sincronizado</span></div>
+      </div>
+      <ul id="tema-list"></ul>
+      <div id="sidebar-footer">
+        <button id="add-tema-btn">+ Novo tema</button>
+        <div class="backup-links">
+          <button id="export-btn">Exportar backup</button>
+          <button id="import-btn">Importar backup</button>
+        </div>
+        <input type="file" id="import-file-input" accept="application/json">
+      </div>
+    </aside>
+
+    <main id="main">
+      <div id="main-empty">Selecione um tema à esquerda, ou crie um novo.</div>
+      <div id="main-content" style="display:none;">
+        <div id="main-header">
+          <input id="tema-titulo" type="text" spellcheck="false">
+          <button id="add-texto-btn">+ Novo texto</button>
+        </div>
+        <div id="texto-list-empty" style="display:none;">Nenhum texto neste tema ainda.</div>
+        <div id="texto-list"></div>
+      </div>
+    </main>
+  </div>
+
+<script>
+(function(){
+
+  // ---------------- Firebase ----------------
+  const firebaseConfig = {
+    apiKey: "AIzaSyBiikcagIm1p7wJG6DsHijkvdy1fpDBn8Y",
+    authDomain: "bd-teste-c931c.firebaseapp.com",
+    databaseURL: "https://bd-teste-c931c-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "bd-teste-c931c",
+    storageBucket: "bd-teste-c931c.firebasestorage.app",
+    messagingSenderId: "270308100761",
+    appId: "1:270308100761:web:ae34fde6d5ae86b67b0608"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const ROOT = "textos_predefinidos";
+  const temasRef = db.ref(ROOT + "/temas");
+  const pinRef = db.ref(ROOT + "/config/pinHash");
+
+  // ---------------- Estado local ----------------
+  let temasData = {};       // snapshot bruto do firebase: { temaId: { nome, ordem, textos: {textoId:{conteudo,ordem}} } }
+  let selectedTemaId = null;
+  const saveTimers = {};    // debounce por textoId
+  const titleSaveTimer = { t: null };
+
+  // ---------------- Utilitários ----------------
+  function novaChave(ref){
+    return ref.push().key;
+  }
+
+  function temasOrdenados(){
+    return Object.keys(temasData)
+      .map(id => ({ id, ...temasData[id] }))
+      .sort((a,b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+  }
+
+  function textosOrdenados(temaId){
+    const tema = temasData[temaId];
+    if(!tema || !tema.textos) return [];
+    return Object.keys(tema.textos)
+      .map(id => ({ id, ...tema.textos[id] }))
+      .sort((a,b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+  }
+
+  function pulseSaveDot(){
+    const dot = document.getElementById('save-dot');
+    dot.classList.remove('pulse');
+    void dot.offsetWidth; // reinicia a animação
+    dot.classList.add('pulse');
+  }
+
+  function ajustarAlturaTextarea(el){
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }
+
+  async function sha256Hex(texto){
+    if(!window.crypto || !window.crypto.subtle){
+      throw new Error("SEM_CRYPTO");
+    }
+    const dados = new TextEncoder().encode(texto);
+    const buffer = await window.crypto.subtle.digest("SHA-256", dados);
+    return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  async function copiarTexto(texto, btn){
+    const textoOriginal = btn.textContent;
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(texto);
+      } else {
+        throw new Error("sem clipboard API");
+      }
+    }catch(e){
+      const ta = document.createElement('textarea');
+      ta.value = texto;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try{ document.execCommand('copy'); }catch(err){ /* último recurso: ignora */ }
+      document.body.removeChild(ta);
+    }
+    btn.textContent = 'Copiado ✓';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = textoOriginal;
+      btn.classList.remove('copied');
+    }, 1400);
+  }
+
+  // ---------------- PIN ----------------
+  const pinScreen = document.getElementById('pin-screen');
+  const pinCardContent = document.getElementById('pin-card-content');
+
+  function desbloquear(){
+    pinScreen.classList.add('hidden');
+    document.getElementById('app').classList.add('visible');
+    iniciarListenerTemas();
+  }
+
+  function mostrarErroCrypto(container){
+    container.innerHTML =
+      '<h1>Não foi possível continuar</h1>' +
+      '<p>Este recurso de segurança (PIN) exige uma conexão segura. ' +
+      'Abra este arquivo por um endereço <strong>https://</strong> ou <strong>http://localhost</strong> para continuar.</p>';
+  }
+
+  function telaCriarPin(){
+    pinCardContent.innerHTML = `
+      <h1>Criar um PIN</h1>
+      <p>Defina um PIN para proteger o acesso a este app.</p>
+      <div class="pin-input-row"><input id="pin-input-1" type="password" inputmode="numeric" maxlength="8" placeholder="Novo PIN" autofocus></div>
+      <div class="pin-input-row"><input id="pin-input-2" type="password" inputmode="numeric" maxlength="8" placeholder="Confirme o PIN"></div>
+      <div class="pin-error" id="pin-error"></div>
+      <button class="primary" id="pin-confirm-btn">Criar PIN e continuar</button>
+    `;
+    const i1 = document.getElementById('pin-input-1');
+    const i2 = document.getElementById('pin-input-2');
+    const erro = document.getElementById('pin-error');
+
+    async function tentarCriar(){
+      const v1 = i1.value.trim();
+      const v2 = i2.value.trim();
+      if(v1.length < 4){ erro.textContent = 'Use pelo menos 4 dígitos.'; return; }
+      if(v1 !== v2){ erro.textContent = 'Os PINs não coincidem.'; i2.value=''; i2.focus(); return; }
+      try{
+        const hash = await sha256Hex(v1);
+        await pinRef.set(hash);
+        desbloquear();
+      }catch(e){
+        if(e.message === 'SEM_CRYPTO'){ mostrarErroCrypto(pinCardContent); }
+        else { erro.textContent = 'Erro ao salvar o PIN. Tente novamente.'; }
+      }
+    }
+    document.getElementById('pin-confirm-btn').addEventListener('click', tentarCriar);
+    i2.addEventListener('keydown', e => { if(e.key === 'Enter') tentarCriar(); });
+  }
+
+  function telaDigitarPin(hashSalvo){
+    pinCardContent.innerHTML = `
+      <h1>Digite o PIN</h1>
+      <p>Acesso protegido.</p>
+      <div class="pin-input-row"><input id="pin-input" type="password" inputmode="numeric" maxlength="8" placeholder="PIN" autofocus></div>
+      <div class="pin-error" id="pin-error"></div>
+      <button class="primary" id="pin-confirm-btn">Entrar</button>
+    `;
+    const input = document.getElementById('pin-input');
+    const erro = document.getElementById('pin-error');
+
+    async function tentarEntrar(){
+      const valor = input.value.trim();
+      if(!valor) return;
+      try{
+        const hash = await sha256Hex(valor);
+        if(hash === hashSalvo){
+          desbloquear();
+        } else {
+          erro.textContent = 'PIN incorreto.';
+          input.value = '';
+          input.classList.add('shake');
+          setTimeout(() => input.classList.remove('shake'), 350);
+          input.focus();
+        }
+      }catch(e){
+        if(e.message === 'SEM_CRYPTO'){ mostrarErroCrypto(pinCardContent); }
+      }
+    }
+    document.getElementById('pin-confirm-btn').addEventListener('click', tentarEntrar);
+    input.addEventListener('keydown', e => { if(e.key === 'Enter') tentarEntrar(); });
+  }
+
+  function iniciarPin(){
+    pinRef.once('value').then(snap => {
+      const hash = snap.val();
+      if(!hash){ telaCriarPin(); } else { telaDigitarPin(hash); }
+    }).catch(() => {
+      pinCardContent.innerHTML = '<h1>Erro de conexão</h1><p>Não foi possível conectar ao banco de dados. Verifique sua internet e recarregue a página.</p>';
+    });
+  }
+
+  // ---------------- Firebase: escuta em tempo real ----------------
+  function iniciarListenerTemas(){
+    temasRef.on('value', snap => {
+      temasData = snap.val() || {};
+      pulseSaveDot();
+      renderSidebar();
+      renderMain();
+    });
+  }
+
+  // ---------------- Render: sidebar ----------------
+  function renderSidebar(){
+    const lista = document.getElementById('tema-list');
+    lista.innerHTML = '';
+    const temas = temasOrdenados();
+
+    if(selectedTemaId && !temasData[selectedTemaId]){
+      selectedTemaId = null;
+    }
+
+    temas.forEach((tema, idx) => {
+      const li = document.createElement('li');
+      li.className = 'tema-item' + (tema.id === selectedTemaId ? ' active' : '');
+
+      const nomeBtn = document.createElement('button');
+      nomeBtn.className = 'tema-nome';
+      nomeBtn.textContent = tema.nome || '(sem nome)';
+      nomeBtn.title = tema.nome || '';
+      nomeBtn.addEventListener('click', () => { selectedTemaId = tema.id; renderSidebar(); renderMain(); });
+      nomeBtn.addEventListener('dblclick', () => iniciarRenomeacaoTema(li, tema));
+
+      const acoes = document.createElement('div');
+      acoes.className = 'tema-actions';
+
+      const upBtn = document.createElement('button');
+      upBtn.className = 'icon-btn';
+      upBtn.textContent = '↑';
+      upBtn.title = 'Mover para cima';
+      upBtn.disabled = idx === 0;
+      upBtn.addEventListener('click', (e) => { e.stopPropagation(); moverTema(tema.id, -1); });
+
+      const downBtn = document.createElement('button');
+      downBtn.className = 'icon-btn';
+      downBtn.textContent = '↓';
+      downBtn.title = 'Mover para baixo';
+      downBtn.disabled = idx === temas.length - 1;
+      downBtn.addEventListener('click', (e) => { e.stopPropagation(); moverTema(tema.id, 1); });
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'icon-btn';
+      editBtn.textContent = '✎';
+      editBtn.title = 'Renomear';
+      editBtn.addEventListener('click', (e) => { e.stopPropagation(); iniciarRenomeacaoTema(li, tema); });
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'icon-btn danger';
+      delBtn.textContent = '🗑';
+      delBtn.title = 'Excluir tema';
+      delBtn.addEventListener('click', (e) => { e.stopPropagation(); excluirTema(tema.id, tema.nome); });
+
+      acoes.append(upBtn, downBtn, editBtn, delBtn);
+      li.append(nomeBtn, acoes);
+      lista.appendChild(li);
+    });
+  }
+
+  function iniciarRenomeacaoTema(li, tema){
+    const nomeBtn = li.querySelector('.tema-nome');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'tema-rename-input';
+    input.value = tema.nome || '';
+    nomeBtn.replaceWith(input);
+    input.focus();
+    input.select();
+
+    function confirmar(){
+      const novoNome = input.value.trim();
+      if(novoNome && novoNome !== tema.nome){
+        temasRef.child(tema.id).child('nome').set(novoNome);
+      } else {
+        renderSidebar();
+      }
+    }
+    input.addEventListener('blur', confirmar);
+    input.addEventListener('keydown', e => {
+      if(e.key === 'Enter'){ input.blur(); }
+      if(e.key === 'Escape'){ input.value = tema.nome || ''; input.blur(); }
+    });
+  }
+
+  function moverTema(id, direcao){
+    const temas = temasOrdenados();
+    const idx = temas.findIndex(t => t.id === id);
+    const alvo = idx + direcao;
+    if(alvo < 0 || alvo >= temas.length) return;
+    const a = temas[idx];
+    const b = temas[alvo];
+    const atualizacoes = {};
+    atualizacoes[a.id + '/ordem'] = b.ordem ?? alvo;
+    atualizacoes[b.id + '/ordem'] = a.ordem ?? idx;
+    temasRef.update(atualizacoes);
+  }
+
+  function excluirTema(id, nome){
+    const ok = confirm('Excluir o tema "' + (nome || '') + '" e todos os seus textos? Esta ação não pode ser desfeita.');
+    if(!ok) return;
+    temasRef.child(id).remove();
+    if(selectedTemaId === id) selectedTemaId = null;
+  }
+
+  document.getElementById('add-tema-btn').addEventListener('click', () => {
+    const lista = document.getElementById('tema-list');
+    const li = document.createElement('li');
+    li.className = 'tema-item active';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'tema-rename-input';
+    input.placeholder = 'Nome do tema';
+    li.appendChild(input);
+    lista.prepend(li);
+    input.focus();
+
+    function confirmar(){
+      const nome = input.value.trim();
+      if(nome){
+        const temas = temasOrdenados();
+        const maiorOrdem = temas.reduce((max, t) => Math.max(max, t.ordem ?? 0), -1);
+        const novaId = novaChave(temasRef);
+        temasRef.child(novaId).set({ nome: nome, ordem: maiorOrdem + 1 }).then(() => {
+          selectedTemaId = novaId;
+        });
+      } else {
+        renderSidebar();
+      }
+    }
+    input.addEventListener('blur', confirmar);
+    input.addEventListener('keydown', e => {
+      if(e.key === 'Enter'){ input.blur(); }
+      if(e.key === 'Escape'){ input.value=''; input.blur(); }
+    });
+  });
+
+  // ---------------- Render: painel principal ----------------
+  function renderMain(){
+    const empty = document.getElementById('main-empty');
+    const content = document.getElementById('main-content');
+
+    if(!selectedTemaId || !temasData[selectedTemaId]){
+      empty.style.display = 'block';
+      content.style.display = 'none';
+      return;
+    }
+    empty.style.display = 'none';
+    content.style.display = 'block';
+
+    const tema = temasData[selectedTemaId];
+    const tituloInput = document.getElementById('tema-titulo');
+    if(document.activeElement !== tituloInput){
+      tituloInput.value = tema.nome || '';
+    }
+
+    const listaEl = document.getElementById('texto-list');
+
+    // Preserva o foco e a posição do cursor caso o usuário esteja digitando
+    // no momento em que o autosave dispara um novo render (evita o cursor
+    // "pular" para o final do texto).
+    let focoAtivo = null;
+    const elAtivo = document.activeElement;
+    if(elAtivo && elAtivo.tagName === 'TEXTAREA' && listaEl.contains(elAtivo)){
+      focoAtivo = {
+        textoId: elAtivo.dataset.textoId,
+        start: elAtivo.selectionStart,
+        end: elAtivo.selectionEnd
+      };
+    }
+
+    listaEl.innerHTML = '';
+    const textos = textosOrdenados(selectedTemaId);
+
+    document.getElementById('texto-list-empty').style.display = textos.length ? 'none' : 'block';
+
+    textos.forEach((texto, idx) => {
+      const card = document.createElement('div');
+      card.className = 'texto-card';
+
+      const textarea = document.createElement('textarea');
+      textarea.value = texto.conteudo || '';
+      textarea.placeholder = 'Digite o texto aqui...';
+      textarea.dataset.textoId = texto.id;
+      textarea.addEventListener('input', () => {
+        ajustarAlturaTextarea(textarea);
+        agendarSalvamentoTexto(selectedTemaId, texto.id, textarea.value);
+      });
+
+      const toolbar = document.createElement('div');
+      toolbar.className = 'texto-toolbar';
+
+      const reorderGroup = document.createElement('div');
+      reorderGroup.className = 'reorder-group';
+
+      const upBtn = document.createElement('button');
+      upBtn.className = 'icon-btn';
+      upBtn.textContent = '↑';
+      upBtn.title = 'Mover para cima';
+      upBtn.disabled = idx === 0;
+      upBtn.addEventListener('click', () => moverTexto(selectedTemaId, texto.id, -1));
+
+      const downBtn = document.createElement('button');
+      downBtn.className = 'icon-btn';
+      downBtn.textContent = '↓';
+      downBtn.title = 'Mover para baixo';
+      downBtn.disabled = idx === textos.length - 1;
+      downBtn.addEventListener('click', () => moverTexto(selectedTemaId, texto.id, 1));
+
+      reorderGroup.append(upBtn, downBtn);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'icon-btn danger';
+      delBtn.textContent = '🗑 Excluir';
+      delBtn.addEventListener('click', () => excluirTexto(selectedTemaId, texto.id));
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'copy-btn';
+      copyBtn.textContent = 'Copiar';
+      copyBtn.addEventListener('click', () => copiarTexto(textarea.value, copyBtn));
+
+      toolbar.append(reorderGroup, delBtn, copyBtn);
+      card.append(textarea, toolbar);
+      listaEl.appendChild(card);
+    });
+
+    // Ajusta a altura de cada textarea para caber exatamente o conteúdo
+    listaEl.querySelectorAll('textarea').forEach(ajustarAlturaTextarea);
+
+    if(focoAtivo && focoAtivo.textoId){
+      const elRestaurado = listaEl.querySelector('textarea[data-texto-id="' + CSS.escape(focoAtivo.textoId) + '"]');
+      if(elRestaurado){
+        elRestaurado.focus();
+        try{ elRestaurado.setSelectionRange(focoAtivo.start, focoAtivo.end); }catch(e){ /* ignora se posição inválida */ }
+      }
+    }
+  }
+
+  document.getElementById('tema-titulo').addEventListener('input', function(){
+    const id = selectedTemaId;
+    const valor = this.value;
+    clearTimeout(titleSaveTimer.t);
+    titleSaveTimer.t = setTimeout(() => {
+      if(id && temasData[id]){
+        temasRef.child(id).child('nome').set(valor.trim() || 'Sem nome');
+      }
+    }, 500);
+  });
+
+  document.getElementById('add-texto-btn').addEventListener('click', () => {
+    if(!selectedTemaId) return;
+    const textos = textosOrdenados(selectedTemaId);
+    const maiorOrdem = textos.reduce((max, t) => Math.max(max, t.ordem ?? 0), -1);
+    const novaId = novaChave(temasRef.child(selectedTemaId).child('textos'));
+    temasRef.child(selectedTemaId).child('textos').child(novaId).set({ conteudo: '', ordem: maiorOrdem + 1 }).then(() => {
+      setTimeout(() => {
+        const areas = document.querySelectorAll('#texto-list textarea');
+        const ultima = areas[areas.length - 1];
+        if(ultima){ ultima.focus(); ajustarAlturaTextarea(ultima); }
+      }, 50);
+    });
+  });
+
+  function agendarSalvamentoTexto(temaId, textoId, valor){
+    clearTimeout(saveTimers[textoId]);
+    saveTimers[textoId] = setTimeout(() => {
+      temasRef.child(temaId).child('textos').child(textoId).child('conteudo').set(valor);
+    }, 500);
+  }
+
+  function moverTexto(temaId, textoId, direcao){
+    const textos = textosOrdenados(temaId);
+    const idx = textos.findIndex(t => t.id === textoId);
+    const alvo = idx + direcao;
+    if(alvo < 0 || alvo >= textos.length) return;
+    const a = textos[idx];
+    const b = textos[alvo];
+    const atualizacoes = {};
+    atualizacoes[a.id + '/ordem'] = b.ordem ?? alvo;
+    atualizacoes[b.id + '/ordem'] = a.ordem ?? idx;
+    temasRef.child(temaId).child('textos').update(atualizacoes);
+  }
+
+  function excluirTexto(temaId, textoId){
+    const ok = confirm('Excluir este texto? Esta ação não pode ser desfeita.');
+    if(!ok) return;
+    temasRef.child(temaId).child('textos').child(textoId).remove();
+  }
+
+  // ---------------- Backup (exportar / importar) ----------------
+  document.getElementById('export-btn').addEventListener('click', () => {
+    const dados = JSON.stringify(temasData, null, 2);
+    const blob = new Blob([dados], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dataStr = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = 'textos-predefinidos-backup-' + dataStr + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('import-btn').addEventListener('click', () => {
+    document.getElementById('import-file-input').click();
+  });
+
+  document.getElementById('import-file-input').addEventListener('change', function(){
+    const arquivo = this.files[0];
+    if(!arquivo) return;
+    const leitor = new FileReader();
+    leitor.onload = function(){
+      try{
+        const dados = JSON.parse(leitor.result);
+        const ok = confirm('Isso vai SUBSTITUIR todos os temas e textos atuais pelos do arquivo importado. Deseja continuar?');
+        if(ok){ temasRef.set(dados); }
+      }catch(e){
+        alert('Arquivo inválido. Verifique se é um backup exportado por este app.');
+      }
+    };
+    leitor.readAsText(arquivo);
+    this.value = '';
+  });
+
+  // ---------------- Início ----------------
+  iniciarPin();
+
+})();
+</script>
+</body>
+</html>
